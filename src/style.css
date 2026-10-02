@@ -2,10 +2,19 @@
    comandi in basso per l'uso con una mano. */
 
 :root {
-  --verde: #1f3b2d;
-  --verde-chiaro: #2f5a44;
-  --oro: #f2c14e;
-  --testo: #111;
+  /* Colori del logo */
+  --verde: #275936;
+  --ocra: #c98301;
+  /* Varianti ricavate dai colori del logo */
+  --verde-scuro: #1b3f26;   /* testi su sfondi ocra o chiari */
+  --verde-chiaro: #3d7a4f;  /* titoli secondari, link */
+  --verde-tenue: #e6efe8;   /* sfondi di evidenza */
+  --ocra-chiaro: #e8a21a;   /* pulsanti e icone su verde: più leggibile dell'ocra pieno */
+  --ocra-tenue: #fdf3df;    /* sfondo degli avvisi */
+  --crema: #faf7f0;         /* barre superiore e inferiore */
+  --bordo: #e3ddd0;
+  --testo: #1c1f1a;
+  --testo-secondario: #545a50;
   --sfondo: #fff;
   --errore: #b3261e;
   --blu-gps: #1a73e8;
@@ -37,15 +46,21 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
-  background: var(--verde);
-  color: #fff;
+  padding: calc(env(safe-area-inset-top) + 6px) 16px 6px;
+  background: var(--crema);
+  color: var(--verde-scuro);
+  border-bottom: 1px solid var(--bordo);
 }
 
 .brand {
   margin: 0;
-  font-size: 1.25rem;
-  letter-spacing: 0.02em;
+  line-height: 0;
+}
+
+.brand img {
+  display: block;
+  height: 38px;
+  width: auto;
 }
 
 .status {
@@ -68,7 +83,7 @@ body {
   order: 3; /* sotto titolo e pulsante info */
   text-align: left;
   -webkit-line-clamp: 4;
-  color: #ffd7d3;
+  color: var(--errore);
   font-weight: 600;
 }
 
@@ -90,8 +105,8 @@ body {
   align-items: center;
   gap: 12px;
   padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px);
-  background: var(--sfondo);
-  border-top: 1px solid #ddd;
+  background: var(--crema);
+  border-top: 1px solid var(--bordo);
 }
 
 .radius {
@@ -132,8 +147,8 @@ body {
   padding: 0 12px;
   border: none;
   border-radius: 10px;
-  background: var(--oro);
-  color: var(--verde);
+  background: var(--ocra-chiaro);
+  color: var(--verde-scuro);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -166,7 +181,7 @@ body {
   border: none;
   border-radius: 50%;
   background: var(--verde);
-  color: var(--oro);
+  color: var(--ocra-chiaro);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -181,7 +196,7 @@ body {
   flex: none;
   width: var(--altezza-tocco);
   height: var(--altezza-tocco);
-  margin: -8px -12px -8px 0;
+  margin: -8px -12px -8px auto; /* sempre allineato a destra */
   border: none;
   background: none;
   color: inherit;
@@ -193,7 +208,7 @@ body {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 3px solid var(--oro);
+  outline: 3px solid var(--ocra);
   outline-offset: 2px;
 }
 
@@ -214,8 +229,8 @@ input:focus-visible {
 }
 
 .raggio-ricerca {
-  fill: var(--oro);
-  fill-opacity: 0.06;
+  fill: var(--ocra);
+  fill-opacity: 0.07;
   stroke: var(--verde);
   stroke-width: 2;
   stroke-dasharray: 6 6;
@@ -254,7 +269,7 @@ input:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--bordo);
 }
 
 .sheet-title {
@@ -325,8 +340,8 @@ h3:first-child {
 .avviso {
   margin: 14px 0 0;
   padding: 10px 12px;
-  border-left: 4px solid var(--oro);
-  background: #fff8e1;
+  border-left: 4px solid var(--ocra);
+  background: var(--ocra-tenue);
   font-size: 0.95rem;
 }
 
@@ -383,7 +398,7 @@ h3:first-child {
   width: 100%;
   min-height: var(--altezza-tocco);
   padding: 0 12px;
-  border: 2px solid #999;
+  border: 2px solid var(--testo-secondario);
   border-radius: 10px;
   font: inherit;
 }
@@ -396,12 +411,12 @@ h3:first-child {
   margin-bottom: 10px;
   padding: 8px 8px 8px 12px;
   border-radius: 10px;
-  background: #eef4ef;
+  background: var(--verde-tenue);
 }
 
 .specie-attiva i,
 .suggerimento i {
-  color: #555;
+  color: var(--testo-secondario);
 }
 
 .suggerimenti {
@@ -418,7 +433,7 @@ h3:first-child {
   min-height: 56px;
   padding: 4px 0;
   border: none;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--bordo);
   background: none;
   font: inherit;
   text-align: left;
@@ -432,7 +447,7 @@ h3:first-child {
   height: 44px;
   border-radius: 8px;
   object-fit: cover;
-  background: #ddd;
+  background: var(--bordo);
 }
 
 .suggerimento span {
@@ -442,7 +457,7 @@ h3:first-child {
 
 .nessuno {
   padding: 10px 0;
-  color: #555;
+  color: var(--testo-secondario);
 }
 
 /* ---------- Scheda osservazione ---------- */
@@ -456,13 +471,13 @@ h3:first-child {
   max-height: 38vh;
   object-fit: cover;
   border-radius: 10px;
-  background: #ddd;
+  background: var(--bordo);
 }
 
 .scheda-foto figcaption {
   margin-top: 4px;
   font-size: 0.75rem;
-  color: #555;
+  color: var(--testo-secondario);
 }
 
 .scheda-nome {
@@ -473,7 +488,7 @@ h3:first-child {
 
 .scheda-sci {
   margin: 2px 0 0;
-  color: #444;
+  color: var(--testo-secondario);
 }
 
 .scheda-dati {
@@ -485,7 +500,7 @@ h3:first-child {
 
 .scheda-dati dt {
   font-weight: 600;
-  color: #555;
+  color: var(--testo-secondario);
 }
 
 .scheda-dati dd {
@@ -516,7 +531,7 @@ h3:first-child {
 }
 
 .info a,
-.leaflet-control-attribution a {
+.leaflet-container .leaflet-control-attribution a {
   color: var(--verde-chiaro);
 }
 
