@@ -1,8 +1,7 @@
-// Contenuto del pannello informazioni: lingua, comportamento corretto e fonti dei dati.
+// Contenuto del pannello informazioni: comportamento corretto e fonti dei dati.
 
 import { el } from './dom.js';
 import { t } from './i18n.js';
-import { creaSelettoreLingua } from './language-switch.js';
 
 const link = (href, testo) => el('a', { href, target: '_blank', rel: 'noopener' }, testo);
 
@@ -16,8 +15,6 @@ export function creaInfo() {
   return el(
     'div',
     { class: 'info' },
-    el('h3', {}, t('lingua')),
-    creaSelettoreLingua(),
     el('h3', {}, t('info.etica')),
     el('ul', {}, ['info.etica1', 'info.etica2', 'info.etica3', 'info.etica4', 'info.etica5'].map((k) => el('li', {}, t(k)))),
     el('h3', {}, t('info.fonti')),
@@ -26,6 +23,7 @@ export function creaInfo() {
       {},
       el('li', {}, conLink('info.fonteMappa', 'https://www.openstreetmap.org/copyright', 'OpenStreetMap')),
       el('li', {}, conLink('info.fonteInat', 'https://www.inaturalist.org', 'iNaturalist')),
+      el('li', {}, conLink('info.fonteEbird', 'https://ebird.org', 'eBird')),
     ),
   );
 }

@@ -1,7 +1,7 @@
-// Filtri delle osservazioni: periodo, gruppi di animali e ricerca per specie.
+// Filtri: livelli visibili, periodo, gruppi di animali e ricerca per specie.
 
 import { el, debounce } from './dom.js';
-import { GRUPPI, GRUPPI_PREDEFINITI } from './groups.js';
+import { GRUPPI } from './groups.js';
 import { suggerisciTaxa } from './inaturalist.js';
 import { leggi, scrivi } from './storage.js';
 import { t } from './i18n.js';
@@ -10,44 +10,64 @@ import { t } from './i18n.js';
 export const PERIODI = [7, 30, 365, 0];
 const PERIODO_PREDEFINITO = 30;
 
-// Stato iniziale: periodo e gruppi vengono ricordati, la specie no
-// (riaprendo l'app è meglio vedere di nuovo tutto)
-export function filtriIniziali() {
+// Livelli della mappa che si possono accendere e spegnere
+export const LIVELLI = ['inat', 'ebirdAvvistamenti', 'ebirdHotspot'];
+
+// Stato iniziale: periodo e livelli vengono ricordati; i gruppi partono da
+// quelli predefiniti nelle impostazioni; la specie no (riaprendo l'app è
+// meglio vedere di nuovo tutto)
+export function filtriIniziali(impostazioni) {
   const salvati = leggi('filtri', {});
-  const gruppiValidi = (salvati.gruppi || []).filter((id) => GRUPPI.some((g) => g.id === id));
+  const livelli = Object.fromEntries(LIVELLI.map((l) => [l, salvati.livelli?.[l] !== false]));
   return {
     giorni: PERIODI.includes(salvati.giorni) ? salvati.giorni : PERIODO_PREDEFINITO,
-    gruppi: gruppiValidi.length ? gruppiValidi : [...GRUPPI_PREDEFINITI],
+    gruppi: [...impostazioni.gruppiPredefiniti],
     taxon: null, // { id, nomeComune, nomeSci }
+    livelli,
   };
 }
 
 export function salvaFiltri(filtri) {
-  scrivi('filtri', { giorni: filtri.giorni, gruppi: filtri.gruppi });
+  scrivi('filtri', { giorni: filtri.giorni, livelli: filtri.livelli });
 }
 
-// Quanti filtri sono diversi dalle impostazioni predefinite (per il badge)
-export function contaFiltriAttivi(filtri) {
+// Quanti filtri sono diversi da quelli predefiniti (per il badge)
+export function contaFiltriAttivi(filtri, impostazioni) {
   let n = 0;
   if (filtri.giorni !== PERIODO_PREDEFINITO) n++;
-  const predefiniti = [...GRUPPI_PREDEFINITI].sort().join();
+  const predefiniti = [...impostazioni.gruppiPredefiniti].sort().join();
   if ([...filtri.gruppi].sort().join() !== predefiniti) n++;
   if (filtri.taxon) n++;
+  if (LIVELLI.some((l) => !filtri.livelli[l])) n++;
   return n;
 }
 
 /**
  * Costruisce il contenuto del pannello filtri.
  * Ogni modifica viene applicata subito chiamando `onCambio(filtri)`.
+ * @param {{ebirdDisponibile: boolean, onApriImpostazioni: () => void}} opzioni
  */
-export function creaPannelloFiltri(filtri, onCambio) {
+export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriImpostazioni }) {
   function cambia(modifiche) {
     Object.assign(filtri, modifiche);
     onCambio(filtri);
     ridisegna();
   }
 
+  // --- Livelli
+  const livelli = el('div', { class: 'chips' });
+  const avvisoEbird = ebirdDisponibile
+    ? null
+    : el(
+        'p',
+        { class: 'nota' },
+        t('filtri.ebirdSenzaChiave'),
+        ' ',
+        el('button', { type: 'button', class: 'link-btn', onclick: onApriImpostazioni }, t('filtri.apriImpostazioni')),
+      );
+
   // --- Periodo
+  const notaPeriodo = el('p', { class: 'nota' });
   const periodo = el('div', { class: 'segmenti', role: 'radiogroup', 'aria-label': t('filtri.periodo') });
 
   // --- Gruppi
@@ -108,6 +128,30 @@ export function creaPannelloFiltri(filtri, onCambio) {
   campo.addEventListener('input', () => cercaSuggerimenti(campo.value.trim()));
 
   function ridisegna() {
+    livelli.replaceChildren(
+      ...LIVELLI.map((id) => {
+        const richiedeEbird = id !== 'inat';
+        const attivo = filtri.livelli[id] && (!richiedeEbird || ebirdDisponibile);
+        return el(
+          'button',
+          {
+            type: 'button',
+            class: 'chip',
+            'aria-pressed': String(attivo),
+            disabled: richiedeEbird && !ebirdDisponibile,
+            onclick: () => cambia({ livelli: { ...filtri.livelli, [id]: !filtri.livelli[id] } }),
+          },
+          el('span', { class: `simbolo-livello simbolo-${id}` }),
+          t(`livello.${id}`),
+        );
+      }),
+    );
+
+    // eBird non va oltre i 30 giorni: lo diciamo quando il periodo scelto è più lungo
+    const ebirdLimitato = ebirdDisponibile && (filtri.giorni === 0 || filtri.giorni > 30);
+    notaPeriodo.textContent = ebirdLimitato ? t('filtri.ebirdLimite') : '';
+    notaPeriodo.hidden = !ebirdLimitato;
+
     periodo.replaceChildren(
       ...PERIODI.map((giorni) =>
         el(
@@ -163,8 +207,12 @@ export function creaPannelloFiltri(filtri, onCambio) {
   return el(
     'div',
     { class: 'filtri' },
+    el('h3', {}, t('filtri.livelli')),
+    livelli,
+    avvisoEbird,
     el('h3', {}, t('filtri.periodo')),
     periodo,
+    notaPeriodo,
     el('h3', {}, t('filtri.gruppi')),
     gruppi,
     el('h3', {}, t('filtri.specie')),

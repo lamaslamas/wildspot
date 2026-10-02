@@ -74,3 +74,82 @@ export function creaScheda(o, { onSoloSpecie } = {}) {
     ),
   );
 }
+
+// Data eBird ("AAAA-MM-GG hh:mm" o "AAAA-MM-GG", ora locale del luogo) in forma breve
+function dataEbird(testo) {
+  if (!testo) return '';
+  const conOra = testo.length > 10;
+  const data = new Date(conOra ? testo.replace(' ', 'T') : `${testo}T12:00`);
+  const opzioni = { day: 'numeric', month: 'short', ...(conOra && { hour: '2-digit', minute: '2-digit' }) };
+  return new Intl.DateTimeFormat(locale(), opzioni).format(data);
+}
+
+/**
+ * Scheda di un luogo eBird: dati dell'hotspot (se lo è) ed elenco degli
+ * avvistamenti recenti, dal più recente.
+ * @param {object} luogo  luogo creato da raggruppaPerLuogo
+ * @param {{conAvvistamenti: boolean}} opzioni  se mostrare gli avvistamenti
+ */
+export function creaSchedaLuogo(luogo, { conAvvistamenti }) {
+  const avvistamenti = conAvvistamenti ? luogo.avvistamenti : [];
+  const linkEbird = luogo.hotspot
+    ? `https://ebird.org/hotspot/${luogo.locId}`
+    : avvistamenti[0]?.link;
+
+  return el(
+    'article',
+    { class: 'scheda' },
+    el(
+      'div',
+      { class: 'etichette' },
+      luogo.hotspot && el('span', { class: 'etichetta' }, t('ebird.hotspot')),
+      luogo.notevole && conAvvistamenti && el('span', { class: 'etichetta etichetta-ocra' }, t('ebird.notevoli')),
+    ),
+    luogo.hotspot &&
+      el(
+        'dl',
+        { class: 'scheda-dati' },
+        el('dt', {}, t('ebird.specieTotali')),
+        el('dd', {}, luogo.specieTotali),
+        luogo.ultimaData && el('dt', {}, t('ebird.ultimaVisita')),
+        luogo.ultimaData && el('dd', {}, dataEbird(luogo.ultimaData)),
+      ),
+    luogo.privato && el('p', { class: 'avviso' }, t('ebird.luogoPrivato')),
+    avvistamenti.length > 0 && el('h3', {}, t('ebird.recenti', { n: avvistamenti.length })),
+    avvistamenti.length > 0 &&
+      el(
+        'ul',
+        { class: 'elenco-avvistamenti' },
+        avvistamenti.map((a) =>
+          el(
+            'li',
+            {},
+            el(
+              'a',
+              { href: a.link, target: '_blank', rel: 'noopener' },
+              el(
+                'span',
+                { class: 'avv-nome' },
+                el('b', {}, a.nomeComune || a.nomeSci),
+                a.notevole && el('span', { class: 'etichetta etichetta-ocra' }, t('ebird.notevole')),
+              ),
+              el('i', {}, a.nomeSci),
+              el(
+                'span',
+                { class: 'avv-meta' },
+                a.numero ? `×${a.numero} · ` : '',
+                dataEbird(a.dataOra),
+              ),
+            ),
+          ),
+        ),
+      ),
+    luogo.hotspot && !avvistamenti.length && el('p', { class: 'nota' }, t('ebird.nessunRecente')),
+    linkEbird &&
+      el(
+        'div',
+        { class: 'scheda-azioni' },
+        el('a', { class: 'btn btn-primario', href: linkEbird, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: 'eBird' })),
+      ),
+  );
+}

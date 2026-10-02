@@ -750,3 +750,154 @@ h3:first-child {
 .leaflet-container:focus:not(:focus-visible) {
   outline: none;
 }
+
+/* ---------- Testi di supporto ---------- */
+.nota {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--testo-secondario);
+}
+
+.nota[hidden] {
+  display: none;
+}
+
+.nota a,
+.link-btn {
+  color: var(--verde-chiaro);
+  font-weight: 600;
+}
+
+/* Pulsante che sembra un link (per azioni dentro un testo) */
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Livelli ---------- */
+.simbolo-livello {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+/* Riproducono l'aspetto degli indicatori sulla mappa */
+.simbolo-inat {
+  /* iNaturalist mostra tutti i gruppi: un pallino con i loro colori */
+  background: conic-gradient(#d6336c 0 25%, #8a4b1f 0 50%, #d98e04 0 75%, #0b7d77 0);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.simbolo-ebirdAvvistamenti {
+  background: #d6336c;
+  box-shadow: 0 0 0 2px var(--verde-scuro);
+}
+
+.simbolo-ebirdHotspot {
+  background: var(--crema);
+  box-shadow: inset 0 0 0 3px var(--verde);
+}
+
+.chip[aria-pressed='true'] .simbolo-ebirdHotspot {
+  box-shadow: inset 0 0 0 3px var(--verde), 0 0 0 2px #fff;
+}
+
+/* ---------- Impostazioni ---------- */
+.riga-campo,
+.riga-azioni {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.riga-campo .campo {
+  flex: 1;
+  min-width: 0;
+}
+
+.riga-azioni .btn {
+  flex: 1;
+}
+
+.riga-azioni .btn[hidden] {
+  display: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+}
+
+.esito {
+  min-height: 1.4em;
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.esito[data-tipo='ok'] {
+  color: var(--verde);
+}
+
+.esito[data-tipo='errore'] {
+  color: var(--errore);
+}
+
+/* ---------- Scheda luogo eBird ---------- */
+.etichette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.etichette:empty {
+  display: none;
+}
+
+.etichetta {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--verde-tenue);
+  color: var(--verde-scuro);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.etichetta-ocra {
+  background: var(--ocra-tenue);
+  color: var(--ocra-testo);
+}
+
+.elenco-avvistamenti {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.elenco-avvistamenti a {
+  display: grid;
+  gap: 1px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bordo);
+  color: inherit;
+  text-decoration: none;
+}
+
+.avv-nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.elenco-avvistamenti i,
+.avv-meta {
+  font-size: 0.88rem;
+  color: var(--testo-secondario);
+}

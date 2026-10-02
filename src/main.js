@@ -1,15 +1,19 @@
-// Punto di ingresso dell'app: collega mappa, GPS, raggio, filtri e osservazioni.
+// Punto di ingresso dell'app: collega mappa, GPS, raggio, filtri, impostazioni
+// e i dati di iNaturalist ed eBird.
 
 import './style.css';
 import { creaMappa, mostraPosizione, mostraRaggio, CENTRO_PREDEFINITO } from './map.js';
 import { leggiPosizione } from './geolocation.js';
-import { creaSelettoreRaggio, RAGGI_KM } from './radius.js';
+import { creaSelettoreRaggio } from './radius.js';
 import { leggi, scrivi } from './storage.js';
 import { debounce, distanzaKm } from './dom.js';
 import { cercaOsservazioni } from './inaturalist.js';
+import { cercaAvvistamenti, cercaHotspot, raggruppaPerLuogo } from './ebird.js';
 import { creaLivelloOsservazioni } from './observations-layer.js';
-import { creaScheda } from './card.js';
+import { creaLivelloEbird } from './ebird-layer.js';
+import { creaScheda, creaSchedaLuogo } from './card.js';
 import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri } from './filters.js';
+import { leggiImpostazioni, creaPannelloImpostazioni } from './settings.js';
 import { creaInfo } from './info.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
@@ -46,12 +50,12 @@ if (leggi('mappaVista', false)) {
 }
 
 // Stato dell'app
+const impostazioni = leggiImpostazioni();
 const stato = {
   centro: leggi('ultimoCentro', CENTRO_PREDEFINITO), // centro della ricerca
-  raggioKm: leggi('raggioKm', 10),
-  filtri: filtriIniziali(),
+  raggioKm: impostazioni.raggioPredefinito,
+  filtri: filtriIniziali(impostazioni),
 };
-if (!RAGGI_KM.includes(stato.raggioKm)) stato.raggioKm = 10;
 
 const elStato = document.getElementById('status');
 const btnPosizione = document.getElementById('locate');
@@ -70,9 +74,12 @@ function mostraMessaggio(chiave, parametri = {}, tipo = 'info') {
 // --- Mappa
 const mappa = creaMappa('map');
 mappa.attributionControl.addAttribution('<a href="https://www.inaturalist.org">iNaturalist</a>');
+const ATTRIBUZIONE_EBIRD = '<a href="https://ebird.org">eBird</a>';
 mostraRaggio(stato.centro, stato.raggioKm);
 
-const livello = creaLivelloOsservazioni(mappa, apriScheda);
+// I luoghi eBird stanno sotto alle osservazioni iNaturalist (creati prima)
+const livelloEbird = creaLivelloEbird(mappa, apriSchedaLuogo);
+const livelloInat = creaLivelloOsservazioni(mappa, apriScheda);
 
 // Toccando un punto vuoto della mappa si chiude il pannello aperto
 mappa.on('click', chiudiSheet);
@@ -89,108 +96,195 @@ mappa.on('moveend', () => {
   caricaConCalma();
 });
 
-// --- Caricamento delle osservazioni
+// --- Caricamento dei dati
 let richiestaInCorso = null;
 
-async function caricaOsservazioni() {
+// Con una specie scelta nei filtri teniamo solo gli avvistamenti eBird con lo
+// stesso nome scientifico (o, per un genere, i nomi che iniziano con esso)
+function corrispondeAllaSpecie(nomeSci, taxon) {
+  if (!taxon) return true;
+  return nomeSci === taxon.nomeSci || nomeSci.startsWith(`${taxon.nomeSci} `);
+}
+
+async function caricaDati() {
   richiestaInCorso?.abort(); // una richiesta nuova rende inutile quella vecchia
   const controller = new AbortController();
   richiestaInCorso = controller;
+  const { signal } = controller;
 
+  const { filtri } = stato;
+  const chiave = impostazioni.chiaveEbird;
+  const vuoiInat = filtri.livelli.inat;
+  // eBird riguarda solo gli uccelli: niente richiesta se sono esclusi dai filtri
+  const uccelliInclusi = Boolean(filtri.taxon) || filtri.gruppi.includes('Aves');
+  const vuoiAvvistamenti = Boolean(chiave) && filtri.livelli.ebirdAvvistamenti && uccelliInclusi;
+  const vuoiHotspot = Boolean(chiave) && filtri.livelli.ebirdHotspot;
+  const livelloEbirdAcceso = Boolean(chiave) && (filtri.livelli.ebirdAvvistamenti || vuoiHotspot);
+
+  if (!vuoiInat && !livelloEbirdAcceso) {
+    livelloInat.aggiorna([]);
+    livelloEbird.aggiorna([], { avvistamenti: false, hotspot: false });
+    mostraMessaggio('stato.nessunLivello');
+    return;
+  }
   if (!navigator.onLine) {
     mostraMessaggio('stato.offline', {}, 'errore');
     return;
   }
   mostraMessaggio('stato.carico');
 
-  try {
-    const { osservazioni, totale } = await cercaOsservazioni(
-      {
-        centro: stato.centro,
-        raggioKm: stato.raggioKm,
-        giorni: stato.filtri.giorni,
-        gruppi: stato.filtri.gruppi,
-        taxonId: stato.filtri.taxon?.id,
-      },
-      controller.signal,
-    );
-    livello.aggiorna(osservazioni);
+  const area = { centro: stato.centro, raggioKm: stato.raggioKm };
+  const [inat, avvistamenti, hotspot] = await Promise.allSettled([
+    vuoiInat
+      ? cercaOsservazioni({ ...area, giorni: filtri.giorni, gruppi: filtri.gruppi, taxonId: filtri.taxon?.id }, signal)
+      : null,
+    vuoiAvvistamenti ? cercaAvvistamenti({ ...area, giorni: filtri.giorni, chiave }, signal) : [],
+    vuoiHotspot ? cercaHotspot({ ...area, chiave }, signal) : [],
+  ]);
+  if (signal.aborted) return;
 
-    const parametri = { n: osservazioni.length, totale, periodo: t(`periodoStato.${stato.filtri.giorni}`) };
-    if (!osservazioni.length) mostraMessaggio('stato.nessuna', parametri);
-    else if (totale > osservazioni.length) mostraMessaggio('stato.parziale', parametri);
-    else mostraMessaggio(osservazioni.length === 1 ? 'stato.conteggio1' : 'stato.conteggio', parametri);
-  } catch (err) {
-    if (err.name === 'AbortError') return;
-    if (err.status === 429) {
-      mostraMessaggio('stato.troppeRichieste', {}, 'errore');
-    } else {
-      mostraMessaggio('stato.erroreRete', {}, 'errore');
-    }
+  // iNaturalist
+  const osservazioni = inat.status === 'fulfilled' && inat.value ? inat.value.osservazioni : [];
+  livelloInat.aggiorna(osservazioni);
+
+  // eBird: avvistamenti filtrati per specie e raggruppati per luogo insieme agli hotspot
+  const avvistamentiOk =
+    avvistamenti.status === 'fulfilled'
+      ? avvistamenti.value.filter((a) => corrispondeAllaSpecie(a.nomeSci, filtri.taxon))
+      : [];
+  const hotspotOk = hotspot.status === 'fulfilled' ? hotspot.value : [];
+  livelloEbird.aggiorna(raggruppaPerLuogo(avvistamentiOk, hotspotOk), {
+    avvistamenti: filtri.livelli.ebirdAvvistamenti,
+    hotspot: filtri.livelli.ebirdHotspot,
+  });
+
+  // Messaggio: prima gli errori (quelli di eBird hanno la precedenza se la
+  // chiave è sbagliata, perché si risolvono dalle impostazioni), poi il conteggio
+  const erroreInat = inat.status === 'rejected' ? inat.reason : null;
+  const erroreEbird = [avvistamenti, hotspot].find((r) => r.status === 'rejected')?.reason;
+  const chiaveRifiutata = erroreEbird && [401, 403].includes(erroreEbird.status);
+
+  if (chiaveRifiutata) {
+    mostraMessaggio('stato.ebirdChiave', {}, 'errore');
+  } else if (erroreInat) {
+    mostraMessaggio(erroreInat.status === 429 ? 'stato.troppeRichieste' : 'stato.erroreRete', {}, 'errore');
+  } else if (erroreEbird) {
+    mostraMessaggio('stato.ebirdErrore', {}, 'errore');
+  } else {
+    const n = osservazioni.length + avvistamentiOk.length;
+    const totaleInat = inat.value?.totale ?? 0;
+    const parametri = {
+      n,
+      totale: totaleInat + avvistamentiOk.length,
+      periodo: t(`periodoStato.${filtri.giorni}`),
+    };
+    if (!n) mostraMessaggio('stato.nessuna', parametri);
+    else if (totaleInat > osservazioni.length) mostraMessaggio('stato.parziale', parametri);
+    else mostraMessaggio(n === 1 ? 'stato.conteggio1' : 'stato.conteggio', parametri);
   }
 }
 
 // Versione con attesa, per raggruppare cambi ravvicinati (spostamenti, filtri)
-const caricaConCalma = debounce(caricaOsservazioni, 700);
+const caricaConCalma = debounce(caricaDati, 700);
 
 // Al ritorno della connessione ricarichiamo
-window.addEventListener('online', caricaOsservazioni);
+window.addEventListener('online', caricaDati);
 
-// --- Scheda dell'osservazione
+// --- Pannelli: ne è aperto uno alla volta. Ricordiamo quale, per poterlo
+// ridisegnare quando cambia la lingua.
+let pannelloAperto = null;
+
+function apriPannello(nome, titolo, contenuto, onChiudi) {
+  apriSheet(titolo, contenuto, {
+    onChiudi: () => {
+      pannelloAperto = null;
+      onChiudi?.();
+    },
+  });
+  pannelloAperto = nome; // dopo apriSheet, che chiama l'onChiudi del pannello precedente
+}
+
+// --- Schede
 function apriScheda(o) {
   const scheda = creaScheda(o, {
     onSoloSpecie: (oss) => {
       stato.filtri.taxon = { id: oss.taxonId, nomeComune: oss.nomeComune, nomeSci: oss.nomeSci };
       aggiornaBadge();
       chiudiSheet();
-      caricaOsservazioni();
+      caricaDati();
     },
   });
-  apriSheet(o.nomeComune || o.nomeSci, scheda, { onChiudi: livello.togliEvidenziazione });
+  apriPannello('scheda', o.nomeComune || o.nomeSci, scheda, livelloInat.togliEvidenziazione);
+}
+
+function apriSchedaLuogo(luogo, opzioni) {
+  apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, opzioni), livelloEbird.togliEvidenziazione);
 }
 
 // --- Filtri
 function aggiornaBadge() {
-  const n = contaFiltriAttivi(stato.filtri);
+  const n = contaFiltriAttivi(stato.filtri, impostazioni);
   elBadge.hidden = n === 0;
   elBadge.textContent = n;
 }
 
-document.getElementById('open-filters').addEventListener('click', () => {
-  apriSheet(
-    t('filtri'),
-    creaPannelloFiltri(stato.filtri, (filtri) => {
+function apriFiltri() {
+  const pannello = creaPannelloFiltri(
+    stato.filtri,
+    (filtri) => {
       salvaFiltri(filtri);
       aggiornaBadge();
       caricaConCalma();
-    }),
+    },
+    { ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriImpostazioni: apriImpostazioni },
   );
-});
+  apriPannello('filtri', t('filtri'), pannello);
+}
+document.getElementById('open-filters').addEventListener('click', apriFiltri);
 aggiornaBadge();
 
-// --- Informazioni
-let infoAperta = false;
+// --- Impostazioni
+function aggiornaAttribuzioneEbird() {
+  mappa.attributionControl.removeAttribution(ATTRIBUZIONE_EBIRD);
+  if (impostazioni.chiaveEbird) mappa.attributionControl.addAttribution(ATTRIBUZIONE_EBIRD);
+}
+aggiornaAttribuzioneEbird();
 
+function apriImpostazioni() {
+  const pannello = creaPannelloImpostazioni((nuove, cosa) => {
+    Object.assign(impostazioni, nuove);
+    // Raggio e gruppi predefiniti valgono dalla prossima apertura;
+    // la chiave eBird invece cambia subito i dati
+    if (cosa === 'chiave') {
+      aggiornaAttribuzioneEbird();
+      caricaDati();
+    }
+    aggiornaBadge();
+  });
+  apriPannello('impostazioni', t('impostazioni'), pannello);
+}
+document.getElementById('settings').addEventListener('click', apriImpostazioni);
+
+// --- Informazioni
 function apriInfo() {
-  apriSheet(t('informazioni'), creaInfo(), { onChiudi: () => (infoAperta = false) });
-  infoAperta = true; // dopo apriSheet, che chiama l'onChiudi del pannello precedente
+  apriPannello('info', t('informazioni'), creaInfo());
 }
 document.getElementById('info').addEventListener('click', apriInfo);
 
 // --- Cambio di lingua
 alCambioLingua(() => {
   if (ultimoMessaggio) mostraMessaggio(ultimoMessaggio.chiave, ultimoMessaggio.parametri, ultimoMessaggio.tipo);
-  // Il pannello informazioni (dove si può cambiare lingua) si ridisegna; gli altri si chiudono
-  if (infoAperta) apriInfo();
+  // Impostazioni e informazioni si ridisegnano nella nuova lingua; gli altri pannelli si chiudono
+  if (pannelloAperto === 'impostazioni') apriImpostazioni();
+  else if (pannelloAperto === 'info') apriInfo();
   else chiudiSheet();
-  // I nomi delle specie arrivano da iNaturalist nella lingua scelta
-  caricaOsservazioni();
+  // I nomi delle specie arrivano dalle API nella lingua scelta
+  caricaDati();
 });
 
-// --- Raggio
+// --- Raggio (la scelta vale per la sessione; il predefinito sta nelle impostazioni)
 creaSelettoreRaggio(document.querySelector('.radius'), stato.raggioKm, (km) => {
   stato.raggioKm = km;
-  scrivi('raggioKm', km);
   mostraRaggio(stato.centro, km);
   caricaConCalma();
 });
@@ -205,12 +299,12 @@ async function centraSuDiMe() {
     scrivi('ultimoCentro', stato.centro); // alla prossima apertura partiamo da qui
     mostraPosizione(pos);
     mostraRaggio(stato.centro, stato.raggioKm);
-    caricaOsservazioni();
+    caricaDati();
   } catch (err) {
     mostraMessaggio(err.chiave || 'gps.errore', {}, 'errore');
-    // Senza GPS mostriamo comunque le osservazioni intorno all'ultimo centro noto,
+    // Senza GPS mostriamo comunque i dati intorno all'ultimo centro noto,
     // lasciando il messaggio d'errore visibile per qualche secondo
-    setTimeout(caricaOsservazioni, 3000);
+    setTimeout(caricaDati, 3000);
   } finally {
     btnPosizione.disabled = false;
   }
