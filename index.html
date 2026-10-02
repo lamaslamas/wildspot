@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f3b2d" />
+    <meta name="description" content="Wildspot: i posti migliori per fotografare animali selvatici intorno a te." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Wildspot</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 class="brand">Wildspot</h1>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </header>
+
+    <main id="map" aria-label="Mappa"></main>
+
+    <!-- Comandi in basso, raggiungibili con il pollice -->
+    <nav class="controls" aria-label="Comandi mappa">
+      <div class="radius" role="radiogroup" aria-label="Raggio di ricerca">
+        <span class="radius-label">Raggio</span>
+        <!-- I pulsanti del raggio vengono generati da src/radius.js -->
+      </div>
+      <button id="locate" class="locate" type="button" aria-label="Centra sulla mia posizione">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" fill="currentColor" />
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="currentColor" stroke-width="2" />
+        </svg>
+      </button>
+    </nav>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

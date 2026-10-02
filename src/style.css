@@ -1,0 +1,180 @@
+/* Stile mobile first: testi grandi e contrastati per la lettura all'aperto,
+   comandi in basso per l'uso con una mano. */
+
+:root {
+  --verde: #1f3b2d;
+  --verde-chiaro: #2f5a44;
+  --oro: #f2c14e;
+  --testo: #111;
+  --sfondo: #fff;
+  --errore: #b3261e;
+  --blu-gps: #1a73e8;
+  --altezza-tocco: 48px; /* dimensione minima consigliata per i tocchi */
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 17px;
+  color: var(--testo);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--sfondo);
+}
+
+/* Barra superiore */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+  background: var(--verde);
+  color: #fff;
+}
+
+.brand {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.status {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Gli errori vanno a capo su una riga dedicata, sotto il titolo */
+.status[data-tipo='errore'] {
+  flex-basis: 100%;
+  text-align: left;
+  white-space: normal;
+  color: #ffd7d3;
+  font-weight: 600;
+}
+
+/* Mappa a tutta altezza */
+#map {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Comandi in basso */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px);
+  background: var(--sfondo);
+  border-top: 1px solid #ddd;
+}
+
+.radius {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.radius-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-right: 2px;
+}
+
+.radius-btn {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--altezza-tocco);
+  padding: 0 4px;
+  border: 2px solid var(--verde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--verde);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Su schermi stretti l'etichetta "Raggio" lascia spazio ai pulsanti
+   (resta comunque l'aria-label del gruppo per i lettori di schermo) */
+@media (max-width: 400px) {
+  .radius-label {
+    display: none;
+  }
+}
+
+.radius-btn[aria-checked='true'] {
+  background: var(--verde);
+  color: #fff;
+}
+
+.locate {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--verde);
+  color: var(--oro);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+}
+
+.locate:disabled {
+  opacity: 0.6;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--oro);
+  outline-offset: 2px;
+}
+
+/* Elementi disegnati sulla mappa */
+.gps-punto {
+  fill: var(--blu-gps);
+  fill-opacity: 1;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.gps-precisione {
+  fill: var(--blu-gps);
+  fill-opacity: 0.12;
+  stroke: var(--blu-gps);
+  stroke-opacity: 0.4;
+  stroke-width: 1;
+}
+
+.raggio-ricerca {
+  fill: var(--oro);
+  fill-opacity: 0.06;
+  stroke: var(--verde);
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+}
+
+/* Attribuzioni leggibili */
+.leaflet-control-attribution {
+  font-size: 0.75rem;
+}
