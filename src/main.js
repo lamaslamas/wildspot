@@ -14,7 +14,7 @@ import { creaLivelloEbird } from './ebird-layer.js';
 import { creaRaggruppamento } from './markers.js';
 import { creaElenco } from './list-view.js';
 import { creaScheda, creaSchedaLuogo } from './card.js';
-import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri } from './filters.js';
+import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri, effettivi } from './filters.js';
 import { leggiImpostazioni, creaPannelloImpostazioni } from './settings.js';
 import { creaInfo } from './info.js';
 import { creaLegenda } from './legend.js';
@@ -201,23 +201,24 @@ async function caricaDati() {
   const { signal } = controller;
 
   const { filtri } = stato;
+  const eff = effettivi(filtri); // cosa mostrare, partendo dalle selezioni
   const chiave = impostazioni.chiaveEbird;
-  const vuoiInat = filtri.livelli.inat;
+  const vuoiInat = eff.livelli.inat;
   // eBird riguarda solo gli uccelli: niente richiesta se sono esclusi dai filtri
-  const uccelliInclusi = Boolean(filtri.taxon) || filtri.gruppi.includes('Aves');
-  const vuoiAvvistamenti = Boolean(chiave) && filtri.livelli.ebirdAvvistamenti && uccelliInclusi;
-  const vuoiHotspot = Boolean(chiave) && filtri.livelli.ebirdHotspot;
-  const livelloEbirdAcceso = Boolean(chiave) && (filtri.livelli.ebirdAvvistamenti || vuoiHotspot);
+  const uccelliInclusi = Boolean(filtri.taxon) || eff.gruppi.includes('Aves');
+  const vuoiAvvistamenti = Boolean(chiave) && eff.livelli.ebirdAvvistamenti && uccelliInclusi;
+  const vuoiHotspot = Boolean(chiave) && eff.livelli.ebirdHotspot;
+  const livelloEbirdAcceso = Boolean(chiave) && (eff.livelli.ebirdAvvistamenti || vuoiHotspot);
 
   // La heatmap ha tile proprie: si aggiorna subito, anche offline mostra ciò che è in cache
-  livelloHeatmap.aggiorna(filtri.livelli.heatmap, filtri);
+  livelloHeatmap.aggiorna(eff.livelli.heatmap, { ...filtri, gruppi: eff.gruppi });
 
   if (!vuoiInat && !livelloEbirdAcceso) {
     livelloInat.aggiorna([]);
     livelloEbird.aggiorna([], { avvistamenti: false, hotspot: false });
     ultimiDati = { osservazioni: [], luoghi: [], visibili: { avvistamenti: false, hotspot: false } };
     aggiornaElenco();
-    mostraMessaggio(filtri.livelli.heatmap ? 'stato.soloHeatmap' : 'stato.nessunLivello');
+    mostraMessaggio(eff.livelli.heatmap ? 'stato.soloHeatmap' : 'stato.nessunLivello');
     return;
   }
   if (!navigator.onLine) {
@@ -229,7 +230,7 @@ async function caricaDati() {
   const area = { centro: stato.centro, raggioKm: stato.raggioKm };
   const [inat, avvistamenti, hotspot] = await Promise.allSettled([
     vuoiInat
-      ? cercaOsservazioni({ ...area, giorni: filtri.giorni, gruppi: filtri.gruppi, taxonId: filtri.taxon?.id }, signal)
+      ? cercaOsservazioni({ ...area, giorni: filtri.giorni, gruppi: eff.gruppi, taxonId: filtri.taxon?.id }, signal)
       : null,
     vuoiAvvistamenti ? cercaAvvistamenti({ ...area, giorni: filtri.giorni, chiave }, signal) : [],
     vuoiHotspot ? cercaHotspot({ ...area, chiave }, signal) : [],
@@ -247,7 +248,7 @@ async function caricaDati() {
       : [];
   const hotspotOk = hotspot.status === 'fulfilled' ? hotspot.value : [];
   const luoghi = raggruppaPerLuogo(avvistamentiOk, hotspotOk);
-  const visibili = { avvistamenti: filtri.livelli.ebirdAvvistamenti, hotspot: filtri.livelli.ebirdHotspot };
+  const visibili = { avvistamenti: eff.livelli.ebirdAvvistamenti, hotspot: eff.livelli.ebirdHotspot };
   livelloEbird.aggiorna(luoghi, visibili);
   ultimiDati = { osservazioni, luoghi, visibili };
   aggiornaElenco();
@@ -438,7 +439,7 @@ let spotAperto = null; // id dello spot mostrato nella scheda
 let moduloSpot = null; // modulo di creazione/modifica aperto
 
 function aggiornaSpotSullaMappa() {
-  livelloSpot.aggiorna(leggiSpot(), stato.filtri.livelli.spot);
+  livelloSpot.aggiorna(leggiSpot(), effettivi(stato.filtri).livelli.spot);
 }
 aggiornaSpotSullaMappa();
 
@@ -519,8 +520,8 @@ function apriModuloSpot(bozza) {
     onSalva: (dati) => {
       const salvato = salvaSpot(dati);
       // se il livello degli spot era spento lo riaccendiamo, altrimenti non si vedrebbe
-      if (!stato.filtri.livelli.spot) {
-        stato.filtri.livelli.spot = true;
+      if (!effettivi(stato.filtri).livelli.spot) {
+        stato.filtri.livelli.spot = true; // aggiunto alle selezioni
         salvaFiltri(stato.filtri);
         aggiornaBadge();
       }

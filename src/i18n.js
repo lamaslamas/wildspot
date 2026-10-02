@@ -130,6 +130,10 @@ const TESTI = {
     // Livelli della mappa
     'filtri.livelli': 'Livelli',
     'filtri.azzera': 'Azzera tutti i filtri',
+    'filtri.livelliTutti': 'Nessun livello scelto: vedi tutti i punti. Scegline uno o più per vedere solo quelli.',
+    'filtri.soloScelti': 'Vedi solo i livelli scelti.',
+    'filtri.gruppiTutti': 'Nessun gruppo scelto: vedi tutti gli animali.',
+    'filtri.periodoTutti': 'Nessun periodo scelto: osservazioni di sempre.',
     'filtri.nessunFiltro': 'Nessun filtro attivo: vedi tutto',
     'livello.inat': 'iNaturalist',
     'livello.ebirdAvvistamenti': 'Avvistamenti eBird',
@@ -393,6 +397,10 @@ const TESTI = {
 
     'filtri.livelli': 'Layers',
     'filtri.azzera': 'Clear all filters',
+    'filtri.livelliTutti': 'No layer chosen: showing all points. Pick one or more to see only those.',
+    'filtri.soloScelti': 'Showing only the chosen layers.',
+    'filtri.gruppiTutti': 'No group chosen: showing all animals.',
+    'filtri.periodoTutti': 'No period chosen: observations from all time.',
     'filtri.nessunFiltro': 'No filters on: showing everything',
     'livello.inat': 'iNaturalist',
     'livello.ebirdAvvistamenti': 'eBird sightings',

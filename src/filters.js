@@ -7,55 +7,72 @@ import { leggi, scrivi } from './storage.js';
 import { t } from './i18n.js';
 import { htmlOsservazione, htmlLivello, iconaPiccola } from './markers.js';
 
-// Periodo in giorni; 0 significa "sempre" (nessun limite di data)
-export const PERIODI = [7, 30, 365, 0];
+// Regola generale dei filtri: in ogni sezione, se non è selezionato niente
+// non c'è nessun filtro e si vede tutto; selezionando qualcosa si restringe.
+// - periodo: 0 = nessuno selezionato = da sempre
+// - gruppi:  [] = tutti i gruppi
+// - livelli: nessuno selezionato = tutti i punti (la heatmap no: va scelta)
+// Le funzioni `effettivi()` traducono queste scelte in ciò che va mostrato.
+
+export const PERIODI = [7, 30, 365];
 const PERIODO_PREDEFINITO = 30;
 
-// Livelli della mappa che si possono accendere e spegnere
 export const LIVELLI = ['inat', 'ebirdAvvistamenti', 'ebirdHotspot', 'spot', 'heatmap'];
-// La heatmap è un modo di visualizzare, non un filtro: parte spenta, non conta
-// nel numero dei filtri attivi e "Azzera" non la tocca
-const SPENTI_ALL_INIZIO = ['heatmap'];
-const LIVELLI_FILTRO = LIVELLI.filter((l) => !SPENTI_ALL_INIZIO.includes(l));
+const LIVELLI_SENZA_SELEZIONE = { inat: true, ebirdAvvistamenti: true, ebirdHotspot: true, spot: true, heatmap: false };
+
+const tuttiIGruppi = () => GRUPPI.map((g) => g.id);
+
+// Tutti i gruppi selezionati equivalgono a nessuno: li salviamo come []
+function normalizzaGruppi(gruppi) {
+  const validi = gruppi.filter((id) => GRUPPI.some((g) => g.id === id));
+  return validi.length === GRUPPI.length ? [] : validi;
+}
 
 // Stato iniziale: periodo e livelli vengono ricordati; i gruppi partono da
 // quelli predefiniti nelle impostazioni; la specie no (riaprendo l'app è
 // meglio vedere di nuovo tutto)
 export function filtriIniziali(impostazioni) {
   const salvati = leggi('filtri', {});
-  const livelli = Object.fromEntries(
-    LIVELLI.map((l) => [l, salvati.livelli?.[l] ?? !SPENTI_ALL_INIZIO.includes(l)]),
-  );
+  const scelti = Array.isArray(salvati.livelliScelti) ? salvati.livelliScelti : [];
   return {
-    giorni: PERIODI.includes(salvati.giorni) ? salvati.giorni : PERIODO_PREDEFINITO,
-    gruppi: [...impostazioni.gruppiPredefiniti],
+    giorni: [...PERIODI, 0].includes(salvati.giorni) ? salvati.giorni : PERIODO_PREDEFINITO,
+    gruppi: normalizzaGruppi(impostazioni.gruppiPredefiniti),
     taxon: null, // { id, nomeComune, nomeSci }
-    livelli,
+    livelli: Object.fromEntries(LIVELLI.map((l) => [l, scelti.includes(l)])), // scelte dell'utente
   };
 }
 
 export function salvaFiltri(filtri) {
-  scrivi('filtri', { giorni: filtri.giorni, livelli: filtri.livelli });
+  scrivi('filtri', { giorni: filtri.giorni, livelliScelti: LIVELLI.filter((l) => filtri.livelli[l]) });
 }
 
-// Nessun filtro: tutto visibile. È lo stato a cui porta il pulsante "Azzera filtri"
-// (anche i valori predefiniti delle impostazioni vengono tolti)
-export function filtriVuoti(attuali) {
+// Ciò che va effettivamente mostrato, partendo dalle selezioni
+export function effettivi(filtri) {
+  const qualcheLivello = LIVELLI.some((l) => filtri.livelli[l]);
   return {
-    giorni: 0, // sempre
-    gruppi: GRUPPI.map((g) => g.id),
-    taxon: null,
-    livelli: { ...Object.fromEntries(LIVELLI_FILTRO.map((l) => [l, true])), heatmap: attuali.livelli.heatmap },
+    giorni: filtri.giorni,
+    gruppi: filtri.gruppi.length ? filtri.gruppi : tuttiIGruppi(),
+    livelli: qualcheLivello ? { ...filtri.livelli } : { ...LIVELLI_SENZA_SELEZIONE },
   };
 }
 
-// Quante restrizioni sono attive rispetto a "tutto visibile" (per il badge)
+// "Azzera tutti i filtri": deseleziona tutto
+export function filtriVuoti() {
+  return {
+    giorni: 0,
+    gruppi: [],
+    taxon: null,
+    livelli: Object.fromEntries(LIVELLI.map((l) => [l, false])),
+  };
+}
+
+// Quante sezioni hanno una selezione (per il badge e il pulsante Azzera)
 export function contaFiltriAttivi(filtri) {
   let n = 0;
   if (filtri.giorni !== 0) n++;
-  if (filtri.gruppi.length < GRUPPI.length) n++;
+  if (filtri.gruppi.length) n++;
   if (filtri.taxon) n++;
-  if (LIVELLI_FILTRO.some((l) => !filtri.livelli[l])) n++;
+  if (LIVELLI.some((l) => filtri.livelli[l])) n++;
   return n;
 }
 
@@ -72,7 +89,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
   }
 
   // --- Azzera: toglie tutti i filtri (in fondo al pannello, sempre visibile)
-  const btnAzzera = el('button', { type: 'button', class: 'btn btn-largo', onclick: () => cambia(filtriVuoti(filtri)) });
+  const btnAzzera = el('button', { type: 'button', class: 'btn btn-largo', onclick: () => cambia(filtriVuoti()) });
   const piedeAzzera = el('div', { class: 'piede-azzera' }, btnAzzera);
 
   // --- Livelli
@@ -88,6 +105,9 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
       );
 
   const notaHeatmap = el('p', { class: 'nota' }, t('filtri.heatmapNota'));
+  const notaLivelli = el('p', { class: 'nota' });
+  const notaGruppi = el('p', { class: 'nota' });
+  const notaPeriodoTutti = el('p', { class: 'nota' }, t('filtri.periodoTutti'));
 
   // --- Periodo
   const notaPeriodo = el('p', { class: 'nota' });
@@ -156,10 +176,14 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
     btnAzzera.textContent = attivi ? `${t('filtri.azzera')} (${attivi})` : t('filtri.nessunFiltro');
 
     notaHeatmap.hidden = !filtri.livelli.heatmap;
+    const eff = effettivi(filtri);
+    notaLivelli.textContent = LIVELLI.some((l) => filtri.livelli[l]) ? t('filtri.soloScelti') : t('filtri.livelliTutti');
+    notaGruppi.textContent = filtri.gruppi.length ? '' : t('filtri.gruppiTutti');
+    notaGruppi.hidden = Boolean(filtri.gruppi.length) || Boolean(filtri.taxon);
     livelli.replaceChildren(
       ...LIVELLI.map((id) => {
         const richiedeEbird = id.startsWith('ebird');
-        const attivo = filtri.livelli[id] && (!richiedeEbird || ebirdDisponibile);
+        const attivo = filtri.livelli[id];
         return el(
           'button',
           {
@@ -176,7 +200,8 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
     );
 
     // eBird non va oltre i 30 giorni: lo diciamo quando il periodo scelto è più lungo
-    const ebirdLimitato = ebirdDisponibile && (filtri.giorni === 0 || filtri.giorni > 30);
+    const ebirdLimitato = ebirdDisponibile && eff.livelli.ebirdAvvistamenti && (filtri.giorni === 0 || filtri.giorni > 30);
+    notaPeriodoTutti.hidden = filtri.giorni !== 0;
     notaPeriodo.textContent = ebirdLimitato ? t('filtri.ebirdLimite') : '';
     notaPeriodo.hidden = !ebirdLimitato;
 
@@ -186,10 +211,10 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
           'button',
           {
             type: 'button',
-            role: 'radio',
             class: 'segmento',
-            'aria-checked': String(filtri.giorni === giorni),
-            onclick: () => cambia({ giorni }),
+            'aria-pressed': String(filtri.giorni === giorni),
+            // toccando il periodo già scelto lo si deseleziona (= da sempre)
+            onclick: () => cambia({ giorni: filtri.giorni === giorni ? 0 : giorni }),
           },
           t(`periodo.${giorni}`),
         ),
@@ -209,7 +234,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
             disabled: Boolean(filtri.taxon),
             onclick: () => {
               const nuovi = attivo ? filtri.gruppi.filter((id) => id !== g.id) : [...filtri.gruppi, g.id];
-              if (nuovi.length) cambia({ gruppi: nuovi }); // almeno un gruppo resta attivo
+              cambia({ gruppi: normalizzaGruppi(nuovi) });
             },
           },
           iconaPiccola(htmlOsservazione(g.id)),
@@ -237,13 +262,16 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
     { class: 'filtri' },
     el('h3', {}, t('filtri.livelli')),
     livelli,
+    notaLivelli,
     avvisoEbird,
     notaHeatmap,
     el('h3', {}, t('filtri.periodo')),
     periodo,
+    notaPeriodoTutti,
     notaPeriodo,
     el('h3', {}, t('filtri.gruppi')),
     gruppi,
+    notaGruppi,
     el('h3', {}, t('filtri.specie')),
     specieScelta,
     campo,

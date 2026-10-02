@@ -674,6 +674,7 @@ h3:first-child {
 }
 
 .segmento[aria-checked='true'],
+.segmento[aria-pressed='true'],
 .chip[aria-pressed='true'] {
   background: var(--verde);
   color: #fff;
