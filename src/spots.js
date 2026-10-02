@@ -10,6 +10,8 @@
 // }
 
 import { leggi, scrivi } from './storage.js';
+import { esportaFoto, importaFoto, eliminaFotoDiSpot } from './photos.js';
+import { leggiSpecieFotografate, importaSpecieFotografate } from './photographed.js';
 
 const CHIAVE = 'spot';
 export const CAMPI_NOTE = ['capanno', 'accesso', 'luce', 'specie'];
@@ -49,6 +51,7 @@ export function salvaSpot(dati) {
 
 export function eliminaSpot(id) {
   salvaTutti(leggiSpot().filter((s) => s.id !== id));
+  eliminaFotoDiSpot(id).catch(() => {}); // anche le sue foto
 }
 
 // Aggiunge una data di visita (se non c'è già) e la tiene in ordine
@@ -86,23 +89,27 @@ function normalizza(s) {
 
 // --- Esportazione e importazione
 
-export function esportaJson() {
+// Il backup contiene spot, foto degli spot e specie fotografate
+export async function esportaJson() {
   const dati = {
     app: 'WildSpot',
-    versione: 1,
+    versione: 2,
     esportato: new Date().toISOString(),
     spot: leggiSpot(),
+    specieFotografate: leggiSpecieFotografate(),
+    foto: await esportaFoto().catch(() => []),
   };
-  return JSON.stringify(dati, null, 2);
+  return JSON.stringify(dati);
 }
 
 /**
  * Unisce gli spot di un file a quelli esistenti. Se uno spot con lo stesso id
  * c'è già, vince la versione modificata più di recente.
- * @returns {{nuovi: number, aggiornati: number, invariati: number}}
+ * Importa anche foto e specie fotografate, se presenti (backup versione 2).
+ * @returns {Promise<{nuovi: number, aggiornati: number, invariati: number, foto: number, specie: number}>}
  * @throws se il file non è un'esportazione valida
  */
-export function importaJson(testo) {
+export async function importaJson(testo) {
   let dati;
   try {
     dati = JSON.parse(testo);
@@ -114,7 +121,7 @@ export function importaJson(testo) {
 
   const lista = leggiSpot();
   const perId = new Map(lista.map((s) => [s.id, s]));
-  const esito = { nuovi: 0, aggiornati: 0, invariati: 0 };
+  const esito = { nuovi: 0, aggiornati: 0, invariati: 0, foto: 0, specie: 0 };
 
   for (const grezzo of ingresso) {
     const spot = normalizza(grezzo);
@@ -131,5 +138,7 @@ export function importaJson(testo) {
     }
   }
   salvaTutti([...perId.values()]);
+  esito.specie = importaSpecieFotografate(dati?.specieFotografate);
+  esito.foto = await importaFoto(dati?.foto, new Set(perId.keys())).catch(() => 0);
   return esito;
 }

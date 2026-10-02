@@ -2136,3 +2136,114 @@ h3:first-child {
   color: var(--testo-secondario);
   font-size: 0.82rem;
 }
+
+/* ---------- Diario: schede, specie fotografate, foto ---------- */
+.schede-diario {
+  margin-bottom: 14px;
+}
+
+.schede-diario .segmento[aria-selected='true'] {
+  background: var(--verde);
+  color: #fff;
+}
+
+.elenco-specie-foto {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.elenco-specie-foto summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--bordo);
+  cursor: pointer;
+  list-style: none;
+}
+
+.elenco-specie-foto summary::-webkit-details-marker {
+  display: none;
+}
+
+.elenco-specie-foto .elenco-visite {
+  padding-left: 32px;
+  font-size: 0.92rem;
+}
+
+.galleria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.galleria-foto,
+.galleria-aggiungi {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bordo);
+  cursor: pointer;
+}
+
+.galleria-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.galleria-aggiungi {
+  display: grid;
+  place-content: center;
+  border: 2px dashed var(--bordo);
+  background: #fff;
+  color: var(--verde-chiaro);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.galleria-aggiungi span {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.foto-grande {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+  background: rgb(0 0 0 / 0.92);
+}
+
+.foto-grande img {
+  max-width: 100%;
+  max-height: 80vh;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.foto-grande-azioni {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.azioni-specie {
+  padding: 2px 0 0;
+}
+
+.btn-fotografata {
+  min-height: 36px;
+  font-size: 0.9rem;
+  text-decoration: none;
+}

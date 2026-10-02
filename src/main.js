@@ -25,6 +25,8 @@ import { creaPannelloLuce } from './light-panel.js';
 import { creaLivelloSole } from './sun-layer.js';
 import { leggiSpot, trovaSpot, salvaSpot, eliminaSpot, aggiungiVisita, togliVisita, esportaJson, importaJson } from './spots.js';
 import { creaDiario, creaSchedaSpot, creaModuloSpot } from './spots-ui.js';
+import { eliminaFotografata } from './photographed.js';
+import { condividiSpot } from './share.js';
 import { creaLivelloSpot } from './spots-layer.js';
 import { creaLivelloHeatmap } from './heatmap-layer.js';
 import { creaSfondi, areeNelPunto } from './basemaps.js';
@@ -470,19 +472,29 @@ function puntoDiRiferimento() {
   return stato.posizioneGps || { lat: c.lat, lng: c.lng };
 }
 
+let schedaDiario = 'spot';
 function apriDiario(messaggio) {
   const diario = creaDiario({
     spot: leggiSpot(),
     riferimento: puntoDiRiferimento(),
     messaggio,
+    scheda: schedaDiario,
+    onScheda: (s) => {
+      schedaDiario = s;
+      apriDiario();
+    },
+    onEliminaFotografata: (id) => {
+      eliminaFotografata(id);
+      apriDiario();
+    },
     onApri: apriSpot,
     onNuovo: () => nuovoSpot(puntoDiRiferimento()),
     onEsporta: scaricaBackup,
-    onImporta: (testo) => {
+    onImporta: async (testo) => {
       try {
-        const esito = importaJson(testo);
+        const esito = await importaJson(testo);
         aggiornaSpotSullaMappa();
-        apriDiario({ testo: t('spot.importati', esito), tipo: 'ok' });
+        apriDiario({ testo: `${t('spot.importati', esito)} ${t('foto.importate', esito)}`, tipo: 'ok' });
       } catch {
         apriDiario({ testo: t('spot.importaErrore'), tipo: 'errore' });
       }
@@ -492,8 +504,8 @@ function apriDiario(messaggio) {
 }
 document.getElementById('diary').addEventListener('click', () => apriDiario());
 
-function scaricaBackup() {
-  const url = URL.createObjectURL(new Blob([esportaJson()], { type: 'application/json' }));
+async function scaricaBackup() {
+  const url = URL.createObjectURL(new Blob([await esportaJson()], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = `wildspot-spot-${dataIso(new Date())}.json`;
@@ -514,6 +526,7 @@ function apriSpot(s) {
     onModifica: () => apriModuloSpot(s),
     onLuce: () => apriLuce(s),
     onQuandoAndare: () => apriQuandoAndare(s, s.nome),
+    onCondividi: () => condividiSpot(s),
     onMappa: vista === 'elenco' ? () => mostraSullaMappa(s, () => livelloSpot.evidenzia(s.id), () => apriSpot(s)) : null,
     onElimina: () => {
       if (!window.confirm(t('spot.confermaElimina', { nome: s.nome }))) return;

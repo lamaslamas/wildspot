@@ -7,6 +7,9 @@ import { CAMPI_NOTE } from './spots.js';
 import { dataIso } from './weather.js';
 import { iconaPiccola } from './markers.js';
 import { HTML_SPOT } from './spots-layer.js';
+import { htmlOsservazione } from './markers.js';
+import { perSpecie } from './photographed.js';
+import { fotoDiSpot, aggiungiFoto, eliminaFoto } from './photos.js';
 
 function dataLunga(iso) {
   const [a, m, g] = iso.split('-').map(Number);
@@ -24,7 +27,7 @@ function distanzaLeggibile(km) {
  * @param {object[]} p.spot
  * @param {{lat:number,lng:number}|null} p.riferimento  per ordinare per distanza
  */
-export function creaDiario({ spot, riferimento, messaggio, onApri, onNuovo, onEsporta, onImporta }) {
+export function creaDiario({ spot, riferimento, messaggio, scheda = 'spot', onScheda, onApri, onNuovo, onEsporta, onImporta, onEliminaFotografata }) {
   // `messaggio` ({testo, tipo}) mostra l'esito di un'importazione appena fatta
   const esito = el('p', { class: 'esito', role: 'status', 'data-tipo': messaggio?.tipo }, messaggio?.testo || '');
   const campoFile = el('input', {
@@ -43,9 +46,19 @@ export function creaDiario({ spot, riferimento, messaggio, onApri, onNuovo, onEs
     riferimento ? distanzaKm(riferimento, a) - distanzaKm(riferimento, b) : a.nome.localeCompare(b.nome),
   );
 
-  return el(
+  const specie = perSpecie();
+  const schede = el(
     'div',
-    { class: 'diario' },
+    { class: 'segmenti schede-diario', role: 'tablist' },
+    [['spot', t('spot.schedaSpot', { n: spot.length })], ['specie', t('foto.schedaSpecie', { n: specie.length })]].map(([id, testo]) =>
+      el('button', { type: 'button', role: 'tab', class: 'segmento', 'aria-selected': String(scheda === id), onclick: () => onScheda(id) }, testo),
+    ),
+  );
+
+  const contenuto =
+    scheda === 'specie'
+      ? elencoSpecie(specie, onEliminaFotografata)
+      : [
     el('button', { type: 'button', class: 'btn btn-primario btn-largo', onclick: onNuovo }, `+ ${t('spot.nuovo')}`),
     el('p', { class: 'nota' }, t('spot.comeAggiungere')),
     spot.length
@@ -76,12 +89,19 @@ export function creaDiario({ spot, riferimento, messaggio, onApri, onNuovo, onEs
           ),
         )
       : el('p', { class: 'vuoto' }, t('spot.nessuno')),
+        ];
+
+  return el(
+    'div',
+    { class: 'diario' },
+    schede,
+    contenuto,
     el('h3', {}, t('spot.backup')),
     el('p', { class: 'nota' }, t('spot.backupNota')),
     el(
       'div',
       { class: 'riga-azioni' },
-      el('button', { type: 'button', class: 'btn', disabled: !spot.length, onclick: onEsporta }, t('spot.esporta')),
+      el('button', { type: 'button', class: 'btn', disabled: !spot.length && !specie.length, onclick: onEsporta }, t('spot.esporta')),
       el('button', { type: 'button', class: 'btn', onclick: () => campoFile.click() }, t('spot.importa')),
     ),
     campoFile,
@@ -89,10 +109,124 @@ export function creaDiario({ spot, riferimento, messaggio, onApri, onNuovo, onEs
   );
 }
 
+// Elenco "Specie fotografate": una voce per specie, si apre per vedere le volte
+function elencoSpecie(specie, onElimina) {
+  if (!specie.length) return el('p', { class: 'vuoto' }, t('foto.nessuna'));
+  return [
+    el('p', { class: 'nota' }, t('foto.comeAggiungere')),
+    el(
+      'ul',
+      { class: 'elenco-specie-foto' },
+      specie.map((g) =>
+        el(
+          'li',
+          {},
+          el(
+            'details',
+            {},
+            el(
+              'summary',
+              {},
+              iconaPiccola(htmlOsservazione(g.gruppo || 'Aves')),
+              el(
+                'span',
+                { class: 'spot-testo' },
+                el('b', {}, g.nomeComune || g.nomeSci),
+                el('small', {}, `${g.nomeComune ? `${g.nomeSci} · ` : ''}${t(g.volte.length === 1 ? 'foto.volta1' : 'foto.volte', { n: g.volte.length })} · ${dataLunga(g.volte[0].data)}`),
+              ),
+            ),
+            el(
+              'ul',
+              { class: 'elenco-visite' },
+              g.volte.map((v) =>
+                el(
+                  'li',
+                  {},
+                  el('span', {}, dataLunga(v.data), v.luogo ? ` · ${v.luogo}` : ''),
+                  el('button', { type: 'button', class: 'icon-btn', 'aria-label': t('foto.elimina'), onclick: () => onElimina(v.id) }, '×'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ];
+}
+
+// Galleria delle foto di uno spot: miniature, aggiunta e visualizzazione a schermo intero
+function creaGalleria(spotId) {
+  const griglia = el('div', { class: 'galleria' });
+  const urls = [];
+  const campo = el('input', {
+    type: 'file',
+    accept: 'image/*',
+    multiple: true,
+    hidden: true,
+    onchange: async () => {
+      const file = [...campo.files];
+      campo.value = '';
+      for (const f of file) await aggiungiFoto(spotId, f).catch(() => {});
+      disegna();
+    },
+  });
+  const btnAggiungi = el('button', { type: 'button', class: 'galleria-aggiungi', onclick: () => campo.click() }, el('span', {}, '+'), t('foto.aggiungi'));
+
+  function apriGrande(f, url) {
+    const vista = el(
+      'div',
+      { class: 'foto-grande', role: 'dialog', 'aria-modal': 'true' },
+      el('img', { src: url, alt: '' }),
+      el(
+        'div',
+        { class: 'foto-grande-azioni' },
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'btn',
+            onclick: async () => {
+              if (!window.confirm(t('foto.confermaElimina'))) return;
+              await eliminaFoto(f.id);
+              vista.remove();
+              disegna();
+            },
+          },
+          t('foto.eliminaFoto'),
+        ),
+        el('button', { type: 'button', class: 'btn btn-primario', onclick: () => vista.remove() }, t('aria.chiudi')),
+      ),
+    );
+    document.body.append(vista);
+  }
+
+  async function disegna() {
+    urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
+    let foto = [];
+    try {
+      foto = await fotoDiSpot(spotId);
+    } catch {
+      griglia.replaceChildren(el('p', { class: 'nota' }, t('foto.nonDisponibili')));
+      return;
+    }
+    griglia.replaceChildren(
+      ...foto.map((f) => {
+        const url = URL.createObjectURL(f.blob);
+        urls.push(url);
+        return el('button', { type: 'button', class: 'galleria-foto', onclick: () => apriGrande(f, url) }, el('img', { src: url, alt: '' }));
+      }),
+      btnAggiungi,
+      campo,
+    );
+  }
+  disegna();
+  return griglia;
+}
+
 /**
  * Scheda di uno spot.
  */
-export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onLuce, onQuandoAndare, onMappa, onElimina }) {
+export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onLuce, onQuandoAndare, onMappa, onElimina, onCondividi }) {
   const oggi = dataIso(new Date());
   const note = CAMPI_NOTE.filter((c) => s[c]);
   return el(
@@ -105,6 +239,8 @@ export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onL
           note.map((c) => [el('dt', {}, t(`spot.${c}`)), el('dd', {}, s[c])]),
         )
       : el('p', { class: 'nota' }, t('spot.senzaNote')),
+    el('h3', {}, t('foto.titolo')),
+    creaGalleria(s.id),
     el('h3', {}, t('spot.visite', { n: s.visite.length })),
     s.visite.length
       ? el(
@@ -143,6 +279,7 @@ export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onL
       el('button', { type: 'button', class: 'btn', onclick: onQuandoAndare }, `★ ${t('andare.titolo')}`),
       el('button', { type: 'button', class: 'btn', onclick: onLuce }, t('scheda.luceMeteo')),
       el('button', { type: 'button', class: 'btn', onclick: onModifica }, t('spot.modifica')),
+      el('button', { type: 'button', class: 'btn', onclick: onCondividi }, t('condividi.pulsante')),
     ),
     el('p', { class: 'nota' }, `${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}`),
     el('button', { type: 'button', class: 'link-btn link-pericolo', onclick: onElimina }, t('spot.elimina')),

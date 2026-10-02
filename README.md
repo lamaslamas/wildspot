@@ -64,6 +64,9 @@ src/weather.js             previsioni orarie da Open-Meteo
 src/spots.js               diario degli spot: salvataggio, esportazione e importazione JSON
 src/spots-ui.js            elenco, scheda e modulo degli spot
 src/spots-layer.js         segnaposto degli spot sulla mappa
+src/photos.js              foto degli spot (IndexedDB, ridimensionate a 1600 px)
+src/photographed.js        specie fotografate
+src/share.js               condivisione di uno spot
 src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di incertezza)
 src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
 src/icons.js               icone SVG dei gruppi di animali e del binocolo
@@ -106,6 +109,7 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Quando vederla**: nelle schede, grafici dei mesi (istogramma `month_of_year` di iNaturalist) e delle ore (dall'orario locale delle ultime 200 osservazioni) entro 100 km, allargati a 300 km o al mondo se i dati sono pochi. Per le specie eBird si cerca la specie su iNaturalist dal nome scientifico.
 - **Luna**: fase, percentuale illuminata, sorgere e tramonto nel pannello Luce e meteo (SunCalc).
 - **Quando andare**: per uno spot o un punto, le ore dorate dei prossimi 7 giorni (Open-Meteo) con un giudizio da pioggia, nuvole (anche basse), vento e visibilità, più la direzione del sole.
+- **Foto e specie fotografate**: le foto degli spot stanno in IndexedDB, le specie fotografate ("L'ho fotografata" nelle schede) in `localStorage`. Il backup JSON (versione 2) contiene spot, foto (come data URL) e specie fotografate.
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

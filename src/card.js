@@ -6,6 +6,24 @@ import { t, locale } from './i18n.js';
 import { htmlOsservazione, iconaPiccola } from './markers.js';
 import { creaQuandoVederla } from './species-stats-ui.js';
 import { taxonDaNomeScientifico } from './species-stats.js';
+import { aggiungiFotografata, giaFotografata } from './photographed.js';
+import { dataIso } from './weather.js';
+
+// Pulsante "L'ho fotografata": aggiunge la specie alle mie specie, con la data di oggi
+export function pulsanteFotografata({ nomeSci, nomeComune, gruppo, luogo, lat, lng }, { piccolo = false } = {}) {
+  const btn = el('button', { type: 'button', class: piccolo ? 'link-btn btn-fotografata' : 'btn' });
+  const aggiorna = () => {
+    const gia = giaFotografata(nomeSci);
+    btn.textContent = gia ? `📷 ${t('foto.giaFotografata')} · ${t('foto.ancora')}` : `📷 ${t('foto.lhoFotografata')}`;
+  };
+  btn.addEventListener('click', () => {
+    aggiungiFotografata({ nomeSci, nomeComune, gruppo, luogo, lat, lng, data: dataIso(new Date()) });
+    btn.textContent = `✓ ${t('foto.aggiunta')}`;
+    setTimeout(aggiorna, 1800);
+  });
+  aggiorna();
+  return btn;
+}
 
 function dataLeggibile(o) {
   const opzioni = { day: 'numeric', month: 'long', year: 'numeric' };
@@ -77,6 +95,7 @@ export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot, onMappa } = {
       onSoloSpecie &&
         o.taxonId &&
         el('button', { class: 'btn', type: 'button', onclick: () => onSoloSpecie(o) }, t('scheda.soloSpecie')),
+      o.nomeSci && pulsanteFotografata({ nomeSci: o.nomeSci, nomeComune: o.nomeComune, gruppo: o.gruppo, luogo: (o.luogo || '').split(',')[0], lat: o.lat, lng: o.lng }),
       onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: o.lat, lng: o.lng }) }, t('scheda.luceMeteo')),
       // Niente spot da un'osservazione oscurata: salverebbe una posizione falsa
       onSalvaSpot &&
@@ -180,6 +199,7 @@ export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot, o
                 dataEbird(a.dataOra),
               ),
             ),
+            el('div', { class: 'azioni-specie' }, pulsanteFotografata({ nomeSci: a.nomeSci, nomeComune: a.nomeComune, gruppo: 'Aves', luogo: luogo.nome, lat: luogo.lat, lng: luogo.lng }, { piccolo: true })),
             quandoVederlaEbird(a, luogo),
           ),
         ),
