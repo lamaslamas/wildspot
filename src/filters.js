@@ -6,7 +6,9 @@ import { suggerisciTaxa } from './inaturalist.js';
 import { leggi, scrivi } from './storage.js';
 import { t } from './i18n.js';
 
-export const PERIODI = [7, 14, 30];
+// Periodo in giorni; 0 significa "sempre" (nessun limite di data)
+export const PERIODI = [7, 30, 365, 0];
+const PERIODO_PREDEFINITO = 30;
 
 // Stato iniziale: periodo e gruppi vengono ricordati, la specie no
 // (riaprendo l'app è meglio vedere di nuovo tutto)
@@ -14,7 +16,7 @@ export function filtriIniziali() {
   const salvati = leggi('filtri', {});
   const gruppiValidi = (salvati.gruppi || []).filter((id) => GRUPPI.some((g) => g.id === id));
   return {
-    giorni: PERIODI.includes(salvati.giorni) ? salvati.giorni : 14,
+    giorni: PERIODI.includes(salvati.giorni) ? salvati.giorni : PERIODO_PREDEFINITO,
     gruppi: gruppiValidi.length ? gruppiValidi : [...GRUPPI_PREDEFINITI],
     taxon: null, // { id, nomeComune, nomeSci }
   };
@@ -27,7 +29,7 @@ export function salvaFiltri(filtri) {
 // Quanti filtri sono diversi dalle impostazioni predefinite (per il badge)
 export function contaFiltriAttivi(filtri) {
   let n = 0;
-  if (filtri.giorni !== 14) n++;
+  if (filtri.giorni !== PERIODO_PREDEFINITO) n++;
   const predefiniti = [...GRUPPI_PREDEFINITI].sort().join();
   if ([...filtri.gruppi].sort().join() !== predefiniti) n++;
   if (filtri.taxon) n++;
@@ -117,7 +119,7 @@ export function creaPannelloFiltri(filtri, onCambio) {
             'aria-checked': String(filtri.giorni === giorni),
             onclick: () => cambia({ giorni }),
           },
-          t('filtri.giorni', { n: giorni }),
+          t(`periodo.${giorni}`),
         ),
       ),
     );

@@ -570,6 +570,10 @@ h3:first-child {
 
 .segmento {
   flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 0.88rem;
+  white-space: nowrap;
 }
 
 .segmento[aria-checked='true'],

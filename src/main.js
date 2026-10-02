@@ -31,6 +31,20 @@ arrotondaAltezzaHero();
 window.addEventListener('resize', debounce(arrotondaAltezzaHero, 150));
 alCambioLingua(arrotondaAltezzaHero);
 
+// Chi ha già raggiunto la mappa in una visita precedente la ritrova subito:
+// la presentazione resta comunque sopra, basta scorrere in su
+const elApp = document.getElementById('app');
+if (leggi('mappaVista', false)) {
+  window.scrollTo({ top: elApp.offsetTop, behavior: 'instant' });
+} else {
+  const osservatore = new IntersectionObserver(([voce]) => {
+    if (!voce.isIntersecting) return;
+    scrivi('mappaVista', true);
+    osservatore.disconnect();
+  }, { threshold: 0.9 });
+  osservatore.observe(elApp);
+}
+
 // Stato dell'app
 const stato = {
   centro: leggi('ultimoCentro', CENTRO_PREDEFINITO), // centro della ricerca
@@ -102,7 +116,7 @@ async function caricaOsservazioni() {
     );
     livello.aggiorna(osservazioni);
 
-    const parametri = { n: osservazioni.length, totale, giorni: stato.filtri.giorni };
+    const parametri = { n: osservazioni.length, totale, periodo: t(`periodoStato.${stato.filtri.giorni}`) };
     if (!osservazioni.length) mostraMessaggio('stato.nessuna', parametri);
     else if (totale > osservazioni.length) mostraMessaggio('stato.parziale', parametri);
     else mostraMessaggio(osservazioni.length === 1 ? 'stato.conteggio1' : 'stato.conteggio', parametri);

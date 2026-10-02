@@ -22,7 +22,7 @@ function dataGiorniFa(giorni) {
  * @param {object} p
  * @param {{lat:number,lng:number}} p.centro
  * @param {number} p.raggioKm
- * @param {number} p.giorni     periodo: ultimi N giorni
+ * @param {number} p.giorni     periodo: ultimi N giorni (0 = sempre)
  * @param {string[]} p.gruppi   taxa iconici (Aves, Mammalia, …)
  * @param {number} [p.taxonId]  specie (o genere, famiglia…) scelta nella ricerca
  * @returns {Promise<{osservazioni: object[], totale: number}>}
@@ -36,10 +36,10 @@ export async function cercaOsservazioni({ centro, raggioKm, giorni, gruppi, taxo
     photos: 'true',
     order_by: 'observed_on',
     order: 'desc',
-    d1: dataGiorniFa(giorni),
     locale: linguaAttuale(), // nomi comuni delle specie nella lingua scelta
     per_page: PER_PAGINA,
   });
+  if (giorni) parametri.set('d1', dataGiorniFa(giorni));
   // Con una specie scelta il gruppo è implicito: evitiamo che i due filtri si escludano
   if (taxonId) parametri.set('taxon_id', taxonId);
   else parametri.set('iconic_taxa', gruppi.join(','));
