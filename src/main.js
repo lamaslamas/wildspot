@@ -19,6 +19,10 @@ import { creaInfo } from './info.js';
 import { creaLegenda } from './legend.js';
 import { creaPannelloLuce } from './light-panel.js';
 import { creaLivelloSole } from './sun-layer.js';
+import { leggiSpot, trovaSpot, salvaSpot, eliminaSpot, aggiungiVisita, togliVisita, esportaJson, importaJson } from './spots.js';
+import { creaDiario, creaSchedaSpot, creaModuloSpot } from './spots-ui.js';
+import { creaLivelloSpot } from './spots-layer.js';
+import { dataIso } from './weather.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
 import { creaSelettoreLingua } from './language-switch.js';
@@ -87,16 +91,19 @@ const raggruppamento = creaRaggruppamento(mappa);
 const livelloEbird = creaLivelloEbird(raggruppamento, apriSchedaLuogo);
 const livelloInat = creaLivelloOsservazioni(mappa, raggruppamento, apriScheda);
 const livelloSole = creaLivelloSole(mappa);
+const livelloSpot = creaLivelloSpot(mappa, apriSpot);
 
-// Toccando un punto vuoto della mappa: con il pannello luce aperto si sposta
-// il punto; altrimenti si chiude il pannello aperto
+// Toccando un punto vuoto della mappa: con il pannello luce o il modulo di uno
+// spot aperti si sposta il punto; altrimenti si chiude il pannello aperto
 mappa.on('click', (e) => {
-  if (pannelloAperto === 'luce' && pannelloLuce) {
-    pannelloLuce.impostaPunto({ lat: e.latlng.lat, lng: e.latlng.lng });
-  } else {
-    chiudiSheet();
-  }
+  const punto = { lat: e.latlng.lat, lng: e.latlng.lng };
+  if (pannelloAperto === 'luce' && pannelloLuce) pannelloLuce.impostaPunto(punto);
+  else if (pannelloAperto === 'moduloSpot' && moduloSpot) moduloSpot.impostaPosizione(punto);
+  else chiudiSheet();
 });
+
+// Tenendo premuto sulla mappa si crea un nuovo spot in quel punto
+mappa.on('contextmenu', (e) => nuovoSpot({ lat: e.latlng.lat, lng: e.latlng.lng }));
 
 // Gli spostamenti fatti dal codice (per mostrare il punto sopra al pannello)
 // non devono spostare l'area di ricerca
@@ -236,6 +243,7 @@ function apriPannello(nome, titolo, contenuto, onChiudi, classe) {
 function apriScheda(o) {
   const scheda = creaScheda(o, {
     onLuce: apriLuce,
+    onSalvaSpot: nuovoSpot,
     onSoloSpecie: (oss) => {
       stato.filtri.taxon = { id: oss.taxonId, nomeComune: oss.nomeComune, nomeSci: oss.nomeSci };
       aggiornaBadge();
@@ -248,7 +256,7 @@ function apriScheda(o) {
 }
 
 function apriSchedaLuogo(luogo, opzioni) {
-  apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, { ...opzioni, onLuce: apriLuce }), livelloEbird.togliEvidenziazione);
+  apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, { ...opzioni, onLuce: apriLuce, onSalvaSpot: nuovoSpot }), livelloEbird.togliEvidenziazione);
   mostraSopraAlPannello(luogo, 0.72);
 }
 
@@ -262,7 +270,7 @@ function apriLuce(punto) {
     // Chiudiamo prima il pannello precedente: la sua chiusura non deve
     // cancellare il disegno del sole appena creato
     chiudiSheet();
-    pannelloLuce = creaPannelloLuce({ punto, onSole: livelloSole.aggiorna });
+    pannelloLuce = creaPannelloLuce({ punto, onSole: livelloSole.aggiorna, onSalvaSpot: nuovoSpot });
     apriPannello(
       'luce',
       t('luce.titolo'),
@@ -320,6 +328,7 @@ function apriFiltri() {
     (filtri) => {
       salvaFiltri(filtri);
       aggiornaBadge();
+      aggiornaSpotSullaMappa();
       caricaConCalma();
     },
     { ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriImpostazioni: apriImpostazioni, impostazioni },
@@ -351,6 +360,114 @@ function apriImpostazioni() {
 }
 document.getElementById('settings').addEventListener('click', apriImpostazioni);
 
+// --- Diario degli spot
+let spotAperto = null; // id dello spot mostrato nella scheda
+let moduloSpot = null; // modulo di creazione/modifica aperto
+
+function aggiornaSpotSullaMappa() {
+  livelloSpot.aggiorna(leggiSpot(), stato.filtri.livelli.spot);
+}
+aggiornaSpotSullaMappa();
+
+function puntoDiRiferimento() {
+  const c = mappa.getCenter();
+  return stato.posizioneGps || { lat: c.lat, lng: c.lng };
+}
+
+function apriDiario(messaggio) {
+  const diario = creaDiario({
+    spot: leggiSpot(),
+    riferimento: puntoDiRiferimento(),
+    messaggio,
+    onApri: apriSpot,
+    onNuovo: () => nuovoSpot(puntoDiRiferimento()),
+    onEsporta: scaricaBackup,
+    onImporta: (testo) => {
+      try {
+        const esito = importaJson(testo);
+        aggiornaSpotSullaMappa();
+        apriDiario({ testo: t('spot.importati', esito), tipo: 'ok' });
+      } catch {
+        apriDiario({ testo: t('spot.importaErrore'), tipo: 'errore' });
+      }
+    },
+  });
+  apriPannello('diario', t('spot.titolo'), diario);
+}
+document.getElementById('diary').addEventListener('click', () => apriDiario());
+
+function scaricaBackup() {
+  const url = URL.createObjectURL(new Blob([esportaJson()], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `wildspot-spot-${dataIso(new Date())}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function apriSpot(s) {
+  const ricarica = (aggiornato) => {
+    aggiornaSpotSullaMappa();
+    apriSpot(aggiornato);
+  };
+  const scheda = creaSchedaSpot(s, {
+    onVisitaOggi: () => ricarica(aggiungiVisita(s.id, dataIso(new Date()))),
+    onTogliVisita: (data) => ricarica(togliVisita(s.id, data)),
+    onModifica: () => apriModuloSpot(s),
+    onLuce: () => apriLuce(s),
+    onElimina: () => {
+      if (!window.confirm(t('spot.confermaElimina', { nome: s.nome }))) return;
+      eliminaSpot(s.id);
+      aggiornaSpotSullaMappa();
+      apriDiario();
+    },
+  });
+  apriPannello('spot', s.nome, scheda, () => {
+    spotAperto = null;
+    livelloSpot.togliEvidenziazione();
+  });
+  spotAperto = s.id;
+  livelloSpot.evidenzia(s.id);
+  mostraSopraAlPannello(s, 0.72);
+}
+
+// Nuovo spot: `bozza` ha la posizione ed eventuali campi precompilati (nome, specie)
+function nuovoSpot(bozza) {
+  apriModuloSpot(bozza);
+}
+
+function apriModuloSpot(bozza) {
+  const modulo = creaModuloSpot(bozza, {
+    posizioneGps: stato.posizioneGps,
+    onPosizione: livelloSpot.mostraAnteprima,
+    onSalva: (dati) => {
+      const salvato = salvaSpot(dati);
+      // se il livello degli spot era spento lo riaccendiamo, altrimenti non si vedrebbe
+      if (!stato.filtri.livelli.spot) {
+        stato.filtri.livelli.spot = true;
+        salvaFiltri(stato.filtri);
+        aggiornaBadge();
+      }
+      aggiornaSpotSullaMappa();
+      apriSpot(salvato);
+    },
+    onAnnulla: () => {
+      const esistente = bozza.id && trovaSpot(bozza.id);
+      if (esistente) apriSpot(esistente);
+      else chiudiSheet();
+    },
+  });
+  apriPannello('moduloSpot', t(bozza.id ? 'spot.modificaTitolo' : 'spot.nuovoTitolo'), modulo, () => {
+    moduloSpot = null;
+    livelloSpot.nascondiAnteprima();
+  });
+  moduloSpot = modulo; // dopo apriPannello, che chiama l'onChiudi del pannello precedente
+  livelloSpot.mostraAnteprima(bozza);
+  mostraSopraAlPannello(bozza, 0.72);
+}
+
 // --- Legenda
 function apriLegenda() {
   apriPannello('legenda', t('legenda'), creaLegenda({ ebirdDisponibile: Boolean(impostazioni.chiaveEbird) }));
@@ -370,6 +487,11 @@ alCambioLingua(() => {
   if (pannelloAperto === 'impostazioni') apriImpostazioni();
   else if (pannelloAperto === 'info') apriInfo();
   else if (pannelloAperto === 'legenda') apriLegenda();
+  else if (pannelloAperto === 'diario') apriDiario();
+  else if (pannelloAperto === 'spot' && spotAperto) apriSpot(trovaSpot(spotAperto));
+  else if (pannelloAperto === 'moduloSpot') {
+    // il modulo resta aperto: chiuderlo farebbe perdere ciò che si sta scrivendo
+  }
   else if (pannelloAperto === 'luce' && pannelloLuce) {
     // ricreiamo il pannello luce nella nuova lingua, sullo stesso punto
     const punto = pannelloLuce.punto();

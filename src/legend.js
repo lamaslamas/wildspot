@@ -5,6 +5,7 @@ import { el } from './dom.js';
 import { t } from './i18n.js';
 import { GRUPPI } from './groups.js';
 import { htmlOsservazione, htmlLuogoEbird, htmlHotspot } from './markers.js';
+import { HTML_SPOT } from './spots-layer.js';
 
 // Elemento con HTML interno (solo per l'HTML generato da noi in markers.js)
 function conHtml(classe, html) {
@@ -50,6 +51,7 @@ export function creaLegenda({ ebirdDisponibile }) {
     el(
       'ul',
       { class: 'legenda' },
+      voce(conHtml('', HTML_SPOT), t('legenda.spot'), t('legenda.spotSpiega')),
       voce(conHtml('', '<span class="mk-gruppo"><span>24</span></span>'), t('legenda.gruppo'), t('legenda.gruppoSpiega')),
       voce(conHtml('', '<span class="gps"></span>'), t('legenda.posizione')),
     ),

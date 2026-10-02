@@ -2,7 +2,7 @@
 
 Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA. Disponibile in italiano e in inglese.
 
-> Stato: **fase 4** — mappa, posizione GPS, raggio, osservazioni iNaturalist, hotspot e avvistamenti eBird, filtri, impostazioni, luce (alba, tramonto, ora dorata e blu, direzione del sole) e meteo orario.
+> Stato: **fase 5** — mappa, posizione GPS, raggio, osservazioni iNaturalist, hotspot e avvistamenti eBird, filtri, impostazioni, luce (alba, tramonto, ora dorata e blu, direzione del sole), meteo orario e diario dei miei spot.
 
 ## Avvio in locale
 
@@ -55,6 +55,9 @@ src/sun.js                 calcoli sul sole con SunCalc (orari, posizione, fasi 
 src/sun-layer.js           punto scelto e direzione del sole sulla mappa
 src/light-panel.js         pannello luce e meteo con cursore orario
 src/weather.js             previsioni orarie da Open-Meteo
+src/spots.js               diario degli spot: salvataggio, esportazione e importazione JSON
+src/spots-ui.js            elenco, scheda e modulo degli spot
+src/spots-layer.js         segnaposto degli spot sulla mappa
 src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di incertezza)
 src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
 src/icons.js               icone SVG dei gruppi di animali e del binocolo
@@ -82,6 +85,7 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Luce**: calcolata sul telefono con SunCalc, senza connessione. Ora blu = sole tra −6° e −4°, ora dorata = tra −4° e +6°. Gli orari sono mostrati nel fuso orario del telefono.
 - **Meteo**: Open-Meteo, nessuna chiave; copre circa gli ultimi tre mesi e i prossimi 15 giorni.
 - **Simboli sulla mappa**: iNaturalist = badge rotondo con l'icona del gruppo; eBird = etichetta verde con binocolo e numero di specie (stella se ci sono specie notevoli); hotspot senza avvistamenti recenti = etichetta chiara. I punti vicini si raggruppano in bolle con il numero (plugin Leaflet.markercluster). Il pulsante **Legenda** sulla mappa spiega tutti i simboli.
+- **Diario degli spot**: salvato solo nel `localStorage` del dispositivo. Da "I miei spot" si esporta un file JSON (`wildspot-spot-AAAA-MM-GG.json`) e lo si reimporta su un altro dispositivo o dopo aver svuotato il browser; all'importazione gli spot con lo stesso identificativo non vengono duplicati e vince la versione modificata più di recente. Uno spot si crea dal diario (nella tua posizione), tenendo premuto sulla mappa, o con "Salva come spot" nelle schede e nel pannello luce (non per le osservazioni con posizione oscurata).
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

@@ -20,9 +20,9 @@ function distanzaLeggibile(metri) {
 
 /**
  * @param {object} o osservazione normalizzata
- * @param {{onSoloSpecie?: (o:object) => void, onLuce?: (punto) => void}} azioni
+ * @param {{onSoloSpecie?: (o:object) => void, onLuce?: (punto) => void, onSalvaSpot?: (bozza) => void}} azioni
  */
-export function creaScheda(o, { onSoloSpecie, onLuce } = {}) {
+export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot } = {}) {
   const g = gruppo(o.gruppo);
 
   return el(
@@ -73,6 +73,19 @@ export function creaScheda(o, { onSoloSpecie, onLuce } = {}) {
         o.taxonId &&
         el('button', { class: 'btn', type: 'button', onclick: () => onSoloSpecie(o) }, t('scheda.soloSpecie')),
       onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: o.lat, lng: o.lng }) }, t('scheda.luceMeteo')),
+      // Niente spot da un'osservazione oscurata: salverebbe una posizione falsa
+      onSalvaSpot &&
+        !o.oscurata &&
+        el(
+          'button',
+          {
+            class: 'btn',
+            type: 'button',
+            onclick: () =>
+              onSalvaSpot({ lat: o.lat, lng: o.lng, nome: (o.luogo || '').split(',')[0], specie: o.nomeComune || o.nomeSci }),
+          },
+          t('spot.salvaCome'),
+        ),
     ),
   );
 }
@@ -90,9 +103,9 @@ function dataEbird(testo) {
  * Scheda di un luogo eBird: dati dell'hotspot (se lo è) ed elenco degli
  * avvistamenti recenti, dal più recente.
  * @param {object} luogo  luogo creato da raggruppaPerLuogo
- * @param {{conAvvistamenti: boolean, onLuce?: (punto) => void}} opzioni
+ * @param {{conAvvistamenti: boolean, onLuce?: (punto) => void, onSalvaSpot?: (bozza) => void}} opzioni
  */
-export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce }) {
+export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot }) {
   const avvistamenti = conAvvistamenti ? luogo.avvistamenti : [];
   const linkEbird = luogo.hotspot
     ? `https://ebird.org/hotspot/${luogo.locId}`
@@ -153,6 +166,22 @@ export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce }) {
       linkEbird &&
         el('a', { class: 'btn btn-primario', href: linkEbird, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: 'eBird' })),
       onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: luogo.lat, lng: luogo.lng }) }, t('scheda.luceMeteo')),
+      onSalvaSpot &&
+        el(
+          'button',
+          {
+            class: 'btn',
+            type: 'button',
+            onclick: () =>
+              onSalvaSpot({
+                lat: luogo.lat,
+                lng: luogo.lng,
+                nome: luogo.nome,
+                specie: [...new Set(avvistamenti.map((a) => a.nomeComune || a.nomeSci))].slice(0, 12).join(', '),
+              }),
+          },
+          t('spot.salvaCome'),
+        ),
     ),
   );
 }

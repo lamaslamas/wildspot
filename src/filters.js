@@ -12,7 +12,7 @@ export const PERIODI = [7, 30, 365, 0];
 const PERIODO_PREDEFINITO = 30;
 
 // Livelli della mappa che si possono accendere e spegnere
-export const LIVELLI = ['inat', 'ebirdAvvistamenti', 'ebirdHotspot'];
+export const LIVELLI = ['inat', 'ebirdAvvistamenti', 'ebirdHotspot', 'spot'];
 
 // Stato iniziale: periodo e livelli vengono ricordati; i gruppi partono da
 // quelli predefiniti nelle impostazioni; la specie no (riaprendo l'app è
@@ -154,7 +154,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
 
     livelli.replaceChildren(
       ...LIVELLI.map((id) => {
-        const richiedeEbird = id !== 'inat';
+        const richiedeEbird = id.startsWith('ebird');
         const attivo = filtri.livelli[id] && (!richiedeEbird || ebirdDisponibile);
         return el(
           'button',

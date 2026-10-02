@@ -15,7 +15,7 @@ export function el(tag, attributi = {}, ...figli) {
       nodo.setAttribute(nome, valore === true ? '' : valore);
     }
   }
-  for (const figlio of figli.flat()) {
+  for (const figlio of figli.flat(Infinity)) {
     if (figlio === null || figlio === undefined || figlio === false) continue;
     nodo.append(figlio instanceof Node ? figlio : String(figlio));
   }

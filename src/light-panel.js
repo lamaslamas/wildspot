@@ -23,9 +23,10 @@ function stessoGiorno(a, b) {
  * @param {object} opzioni
  * @param {{lat:number,lng:number}} opzioni.punto
  * @param {(stato: object) => void} opzioni.onSole  chiamata a ogni cambio, per aggiornare la mappa
+ * @param {(punto) => void} [opzioni.onSalvaSpot]  salva il punto nel diario
  * @returns {{elemento: HTMLElement, impostaPunto: (punto) => void}}
  */
-export function creaPannelloLuce({ punto, onSole }) {
+export function creaPannelloLuce({ punto, onSole, onSalvaSpot }) {
   const ora = new Date();
   const stato = {
     punto,
@@ -245,6 +246,8 @@ export function creaPannelloLuce({ punto, onSole }) {
       { class: 'nota' },
       t('luce.punto'), ' ', elCoordinate, '. ', t('luce.spostaPunto'),
     ),
+    onSalvaSpot &&
+      el('button', { type: 'button', class: 'btn btn-largo', onclick: () => onSalvaSpot({ ...stato.punto }) }, t('spot.salvaCome')),
     el(
       'p',
       { class: 'nota' },

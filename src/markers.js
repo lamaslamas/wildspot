@@ -13,6 +13,7 @@ import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css'; // animazioni del raggruppamento
 import { iconaGruppo, ICONA_BINOCOLO } from './icons.js';
 import { gruppo } from './groups.js';
+import { HTML_SPOT } from './spots-layer.js';
 
 export function htmlOsservazione(idGruppo, oscurata = false) {
   const { colore } = gruppo(idGruppo);
@@ -32,6 +33,7 @@ export function htmlHotspot() {
 export function htmlLivello(id) {
   if (id === 'ebirdAvvistamenti') return htmlLuogoEbird(null);
   if (id === 'ebirdHotspot') return htmlHotspot();
+  if (id === 'spot') return HTML_SPOT;
   // iNaturalist mostra tutti i gruppi: badge rotondo con i loro colori
   return '<span class="mk mk-inat mk-multi"></span>';
 }
