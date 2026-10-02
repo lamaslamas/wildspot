@@ -23,7 +23,7 @@ function voce(simbolo, titolo, spiegazione) {
   );
 }
 
-export function creaLegenda({ ebirdDisponibile }) {
+export function creaLegenda({ ebirdDisponibile, onApriInfo }) {
   return el(
     'div',
     {},
@@ -57,5 +57,6 @@ export function creaLegenda({ ebirdDisponibile }) {
       voce(conHtml('', '<span class="mk-gruppo"><span>24</span></span>'), t('legenda.gruppo'), t('legenda.gruppoSpiega')),
       voce(conHtml('', '<span class="gps"></span>'), t('legenda.posizione')),
     ),
+    onApriInfo && el('button', { type: 'button', class: 'btn btn-largo', onclick: onApriInfo }, `ⓘ ${t('aria.info')}`),
   );
 }

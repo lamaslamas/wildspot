@@ -9,6 +9,7 @@ import { creaSelettoreLingua } from './language-switch.js';
 import { verificaChiave } from './ebird.js';
 import { RAGGI_KM } from './radius.js';
 import { creaBloccoInstalla } from './install-ui.js';
+import { leggiSeguite, smettiDiSeguire } from './follow.js';
 import { htmlOsservazione, iconaPiccola } from './markers.js';
 
 export function leggiImpostazioni() {
@@ -18,6 +19,7 @@ export function leggiImpostazioni() {
     chiaveEbird: typeof s.chiaveEbird === 'string' ? s.chiaveEbird : '',
     raggioPredefinito: RAGGI_KM.includes(s.raggioPredefinito) ? s.raggioPredefinito : 10,
     gruppiPredefiniti: gruppi.length ? gruppi : [...GRUPPI_PREDEFINITI],
+    raggioAvvisi: RAGGI_KM.includes(s.raggioAvvisi) ? s.raggioAvvisi : 25,
   };
 }
 
@@ -29,8 +31,19 @@ function salva(impostazioni) {
  * Pannello delle impostazioni. Ogni modifica viene salvata subito e
  * comunicata con `onCambio(impostazioni, cosaECambiato)`.
  */
-export function creaPannelloImpostazioni(onCambio) {
+export function creaPannelloImpostazioni(onCambio, { onApriInfo } = {}) {
   const imp = leggiImpostazioni();
+
+  // --- Avvisi per le specie seguite
+  const raggiAvvisi = el('div', { class: 'segmenti', role: 'radiogroup', 'aria-label': t('segui.raggio') });
+  const elencoSeguite = el('ul', { class: 'elenco-seguite' });
+  const btnNotifiche = el('button', { type: 'button', class: 'btn btn-largo' });
+  async function chiediNotifiche() {
+    if (!('Notification' in window)) return;
+    await Notification.requestPermission();
+    ridisegna();
+  }
+  btnNotifiche.addEventListener('click', chiediNotifiche);
 
   function cambia(modifiche, cosa) {
     Object.assign(imp, modifiche);
@@ -118,7 +131,51 @@ export function creaPannelloImpostazioni(onCambio) {
   const raggi = el('div', { class: 'segmenti', role: 'radiogroup', 'aria-label': t('imp.raggio') });
   const gruppi = el('div', { class: 'chips' });
 
+  function ridisegnaAvvisi() {
+    raggiAvvisi.replaceChildren(
+      ...RAGGI_KM.map((km) =>
+        el(
+          'button',
+          {
+            type: 'button',
+            role: 'radio',
+            class: 'segmento',
+            'aria-checked': String(imp.raggioAvvisi === km),
+            onclick: () => cambia({ raggioAvvisi: km }, 'avvisi'),
+          },
+          `${km} km`,
+        ),
+      ),
+    );
+    const seguite = leggiSeguite();
+    elencoSeguite.replaceChildren(
+      ...(seguite.length
+        ? seguite.map((s) =>
+            el(
+              'li',
+              {},
+              el('span', {}, el('b', {}, s.nomeComune || s.nomeSci), s.nomeComune ? el('small', {}, ` ${s.nomeSci}`) : ''),
+              el('button', { type: 'button', class: 'icon-btn', 'aria-label': t('segui.smetti'), onclick: () => { smettiDiSeguire(s.nomeSci); ridisegna(); } }, '×'),
+            ),
+          )
+        : [el('li', { class: 'nota' }, t('segui.nessuna'))]),
+    );
+    const supportate = 'Notification' in window;
+    const permesso = supportate ? Notification.permission : 'denied';
+    btnNotifiche.hidden = !supportate || permesso !== 'default';
+    btnNotifiche.textContent = t('segui.attivaNotifiche');
+    notaNotifiche.textContent = !supportate
+      ? t('segui.notificheNo')
+      : permesso === 'granted'
+        ? t('segui.notificheSi')
+        : permesso === 'denied'
+          ? t('segui.notificheNegate')
+          : t('segui.notificheSpiega');
+  }
+  const notaNotifiche = el('p', { class: 'nota' });
+
   function ridisegna() {
+    ridisegnaAvvisi();
     btnRimuovi.hidden = !imp.chiaveEbird;
     raggi.replaceChildren(
       ...RAGGI_KM.map((km) =>
@@ -162,6 +219,7 @@ export function creaPannelloImpostazioni(onCambio) {
   return el(
     'div',
     { class: 'impostazioni' },
+    onApriInfo && el('button', { type: 'button', class: 'btn link-info', onclick: onApriInfo }, `ⓘ ${t('aria.info')}`),
     el('h3', {}, t('imp.ebird')),
     el(
       'p',
@@ -181,6 +239,13 @@ export function creaPannelloImpostazioni(onCambio) {
     el('p', { class: 'nota' }, t('imp.predefinitiNota')),
     el('h3', {}, t('lingua')),
     creaSelettoreLingua(),
+    el('h3', {}, t('segui.titolo')),
+    el('p', { class: 'nota' }, t('segui.spiega')),
+    elencoSeguite,
+    el('p', { class: 'nota' }, t('segui.raggio')),
+    raggiAvvisi,
+    btnNotifiche,
+    notaNotifiche,
     el('h3', {}, t('installa.titolo')),
     creaBloccoInstalla(),
   );

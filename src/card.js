@@ -7,6 +7,28 @@ import { htmlOsservazione, iconaPiccola } from './markers.js';
 import { creaQuandoVederla } from './species-stats-ui.js';
 import { taxonDaNomeScientifico } from './species-stats.js';
 import { aggiungiFotografata, giaFotografata } from './photographed.js';
+import { segue, segui, smettiDiSeguire } from './follow.js';
+
+// Pulsante "Segui questa specie": avvisa quando viene segnalata vicino a te
+export function pulsanteSegui({ taxonId, nomeSci, nomeComune, gruppo }, { piccolo = false } = {}) {
+  const btn = el('button', { type: 'button', class: piccolo ? 'link-btn btn-fotografata' : 'btn btn-segui' });
+  const aggiorna = () => {
+    const attivo = segue(nomeSci);
+    btn.setAttribute('aria-pressed', String(attivo));
+    btn.textContent = attivo ? `🔔 ${t('segui.seguita')}` : `🔔 ${t('segui.segui')}`;
+  };
+  btn.addEventListener('click', async () => {
+    if (segue(nomeSci)) smettiDiSeguire(nomeSci);
+    else {
+      // per le specie eBird cerchiamo l'id iNaturalist, così l'avviso usa entrambe le fonti
+      const id = taxonId || (await taxonDaNomeScientifico(nomeSci).catch(() => null));
+      segui({ taxonId: id, nomeSci, nomeComune, gruppo });
+    }
+    aggiorna();
+  });
+  aggiorna();
+  return btn;
+}
 import { dataIso } from './weather.js';
 
 // Pulsante "L'ho fotografata": aggiunge la specie alle mie specie, con la data di oggi
@@ -95,6 +117,7 @@ export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot, onMappa } = {
       onSoloSpecie &&
         o.taxonId &&
         el('button', { class: 'btn', type: 'button', onclick: () => onSoloSpecie(o) }, t('scheda.soloSpecie')),
+      o.nomeSci && pulsanteSegui({ taxonId: o.taxonId, nomeSci: o.nomeSci, nomeComune: o.nomeComune, gruppo: o.gruppo }),
       o.nomeSci && pulsanteFotografata({ nomeSci: o.nomeSci, nomeComune: o.nomeComune, gruppo: o.gruppo, luogo: (o.luogo || '').split(',')[0], lat: o.lat, lng: o.lng }),
       onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: o.lat, lng: o.lng }) }, t('scheda.luceMeteo')),
       // Niente spot da un'osservazione oscurata: salverebbe una posizione falsa
@@ -199,7 +222,7 @@ export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot, o
                 dataEbird(a.dataOra),
               ),
             ),
-            el('div', { class: 'azioni-specie' }, pulsanteFotografata({ nomeSci: a.nomeSci, nomeComune: a.nomeComune, gruppo: 'Aves', luogo: luogo.nome, lat: luogo.lat, lng: luogo.lng }, { piccolo: true })),
+            el('div', { class: 'azioni-specie' }, pulsanteSegui({ nomeSci: a.nomeSci, nomeComune: a.nomeComune, gruppo: 'Aves' }, { piccolo: true }), ' · ', pulsanteFotografata({ nomeSci: a.nomeSci, nomeComune: a.nomeComune, gruppo: 'Aves', luogo: luogo.nome, lat: luogo.lat, lng: luogo.lng }, { piccolo: true })),
             quandoVederlaEbird(a, luogo),
           ),
         ),

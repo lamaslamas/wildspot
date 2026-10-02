@@ -27,6 +27,8 @@ import { leggiSpot, trovaSpot, salvaSpot, eliminaSpot, aggiungiVisita, togliVisi
 import { creaDiario, creaSchedaSpot, creaModuloSpot } from './spots-ui.js';
 import { eliminaFotografata } from './photographed.js';
 import { condividiSpot } from './share.js';
+import { leggiSeguite, leggiNovita, nonViste, segnaTutteViste, svuotaNovita, controllaNovita, notifica } from './follow.js';
+import { creaPannelloNovita } from './alerts-ui.js';
 import { creaLivelloSpot } from './spots-layer.js';
 import { creaLivelloHeatmap } from './heatmap-layer.js';
 import { creaSfondi, areeNelPunto } from './basemaps.js';
@@ -453,7 +455,7 @@ function apriImpostazioni() {
       caricaDati();
     }
     aggiornaBadge();
-  });
+  }, { onApriInfo: apriInfo });
   apriPannello('impostazioni', t('impostazioni'), pannello);
 }
 document.getElementById('settings').addEventListener('click', apriImpostazioni);
@@ -605,7 +607,7 @@ async function mostraAree(punto) {
 
 // --- Legenda
 function apriLegenda() {
-  apriPannello('legenda', t('legenda'), creaLegenda({ ebirdDisponibile: Boolean(impostazioni.chiaveEbird) }));
+  apriPannello('legenda', t('legenda'), creaLegenda({ ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriInfo: apriInfo }));
 }
 document.getElementById('legend').addEventListener('click', apriLegenda);
 
@@ -613,7 +615,77 @@ document.getElementById('legend').addEventListener('click', apriLegenda);
 function apriInfo() {
   apriPannello('info', t('informazioni'), creaInfo());
 }
-document.getElementById('info').addEventListener('click', apriInfo);
+// (il pulsante delle informazioni sta nelle Impostazioni e nella Legenda)
+
+// --- Specie seguite: novità e avvisi
+const elBadgeNovita = document.getElementById('alerts-badge');
+function aggiornaBadgeNovita() {
+  const n = nonViste();
+  elBadgeNovita.hidden = n === 0;
+  elBadgeNovita.textContent = n > 9 ? '9+' : n;
+}
+aggiornaBadgeNovita();
+
+function apriNovita() {
+  const pannello = creaPannelloNovita(leggiNovita(), {
+    riferimento: stato.posizioneGps || stato.centro,
+    haSeguite: leggiSeguite().length > 0,
+    ultimoControllo: leggi('ultimoControllo', null),
+    onApri: apriNovitaSingola,
+    onSvuota: () => {
+      svuotaNovita();
+      aggiornaBadgeNovita();
+      apriNovita();
+    },
+    onControlla: async () => {
+      await controlla({ forzato: true });
+      apriNovita();
+    },
+  });
+  apriPannello('novita', t('segui.novita'), pannello);
+  segnaTutteViste();
+  aggiornaBadgeNovita();
+}
+document.getElementById('alerts').addEventListener('click', apriNovita);
+
+// Apre una novità: centra la mappa e mostra la scheda
+function apriNovitaSingola(n) {
+  impostaVista('mappa');
+  ignoraProssimoSpostamento = true;
+  mappa.setView([n.dati.lat, n.dati.lng], Math.max(mappa.getZoom(), 14), { animate: false });
+  if (n.fonte === 'iNaturalist') apriScheda(n.dati);
+  else apriSchedaLuogo({ nome: n.dati.luogo, lat: n.dati.lat, lng: n.dati.lng, hotspot: false, avvistamenti: [n.dati], notevole: false }, { conAvvistamenti: true });
+}
+
+let ultimoControlloLocale = 0;
+async function controlla({ forzato = false } = {}) {
+  if (!leggiSeguite().length || !navigator.onLine) return;
+  if (!forzato && Date.now() - ultimoControlloLocale < 15 * 60 * 1000) return;
+  ultimoControlloLocale = Date.now();
+  try {
+    const nuove = await controllaNovita({
+      centro: stato.posizioneGps || stato.centro,
+      raggioKm: impostazioni.raggioAvvisi,
+      chiaveEbird: impostazioni.chiaveEbird,
+    });
+    aggiornaBadgeNovita();
+    if (nuove.length) {
+      const prima = nuove[0].dati;
+      notifica(
+        t('segui.notificaTitolo', { n: nuove.length }),
+        `${prima.nomeComune || prima.nomeSci} · ${prima.luogo || ''}${nuove.length > 1 ? ` (+${nuove.length - 1})` : ''}`,
+      );
+    }
+  } catch {
+    // riproveremo al prossimo controllo
+  }
+}
+// Controlli: dopo l'avvio, ogni 30 minuti e quando si torna sull'app
+setTimeout(() => controlla(), 8000);
+setInterval(() => controlla(), 30 * 60 * 1000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') controlla();
+});
 
 // --- Cambio di lingua
 alCambioLingua(() => {
@@ -626,6 +698,7 @@ alCambioLingua(() => {
   else if (pannelloAperto === 'info') apriInfo();
   else if (pannelloAperto === 'legenda') apriLegenda();
   else if (pannelloAperto === 'sfondi') apriSfondi();
+  else if (pannelloAperto === 'novita') apriNovita();
   else if (pannelloAperto === 'diario') apriDiario();
   else if (pannelloAperto === 'spot' && spotAperto) apriSpot(trovaSpot(spotAperto));
   else if (pannelloAperto === 'moduloSpot') {

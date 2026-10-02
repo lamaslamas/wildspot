@@ -2,7 +2,7 @@
 
 Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA. Disponibile in italiano e in inglese.
 
-> Stato: **fase 5** — mappa, posizione GPS, raggio, osservazioni iNaturalist, hotspot e avvistamenti eBird, filtri, impostazioni, luce (alba, tramonto, ora dorata e blu, direzione del sole), meteo orario e diario dei miei spot.
+> Stato: **tutte le fasi della SPEC completate**, più: vista elenco, heatmap, sfondi topografico e satellitare, aree protette, luna, "Quando vederla" per specie, "Quando andare", foto negli spot, specie fotografate, condivisione degli spot, specie seguite con avvisi.
 
 ## Avvio in locale
 
@@ -67,6 +67,10 @@ src/spots-layer.js         segnaposto degli spot sulla mappa
 src/photos.js              foto degli spot (IndexedDB, ridimensionate a 1600 px)
 src/photographed.js        specie fotografate
 src/share.js               condivisione di uno spot
+src/follow.js              specie seguite e controllo delle nuove segnalazioni
+src/alerts-ui.js           pannello Novità (campanella)
+src/pwa.js                 service worker e installazione
+src/install-ui.js          pulsante "Installa l'app"
 src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di incertezza)
 src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
 src/icons.js               icone SVG dei gruppi di animali e del binocolo
@@ -110,6 +114,7 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Luna**: fase, percentuale illuminata, sorgere e tramonto nel pannello Luce e meteo (SunCalc).
 - **Quando andare**: per uno spot o un punto, le ore dorate dei prossimi 7 giorni (Open-Meteo) con un giudizio da pioggia, nuvole (anche basse), vento e visibilità, più la direzione del sole.
 - **Foto e specie fotografate**: le foto degli spot stanno in IndexedDB, le specie fotografate ("L'ho fotografata" nelle schede) in `localStorage`. Il backup JSON (versione 2) contiene spot, foto (come data URL) e specie fotografate.
+- **Specie seguite e avvisi**: "Segui" nelle schede. Con l'app aperta (all'avvio, ogni 30 minuti e al ritorno sull'app) si cercano nuove osservazioni iNaturalist caricate dopo l'ultimo controllo e avvistamenti eBird recenti entro la distanza scelta nelle Impostazioni. Le novità compaiono sotto la campanella; con il permesso arriva anche una notifica. Senza un server non è possibile avvisare ad app chiusa.
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

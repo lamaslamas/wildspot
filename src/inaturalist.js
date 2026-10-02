@@ -85,7 +85,7 @@ export async function suggerisciTaxa(testo, signal) {
 }
 
 // Converte un'osservazione dell'API nel formato usato dall'app
-function normalizza(o) {
+export function normalizza(o) {
   if (!o.geojson?.coordinates) return null;
   const [lng, lat] = o.geojson.coordinates;
   const foto = o.photos?.[0];

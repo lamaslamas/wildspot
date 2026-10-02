@@ -82,7 +82,7 @@ export async function verificaChiave(chiave) {
   return risposta.ok;
 }
 
-function normalizza(o, notevole) {
+export function normalizza(o, notevole) {
   return {
     id: `ebird-${o.subId}-${o.speciesCode}`,
     fonte: 'eBird',
