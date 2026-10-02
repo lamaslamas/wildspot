@@ -2,13 +2,14 @@
 // e i dati di iNaturalist ed eBird.
 
 import './style.css';
+import L from './leaflet-global.js';
 import './pwa.js';
 import { creaBloccoInstalla } from './install-ui.js';
 import { creaMappa, mostraPosizione, mostraRaggio, CENTRO_PREDEFINITO } from './map.js';
 import { leggiPosizione } from './geolocation.js';
 import { creaSelettoreRaggio } from './radius.js';
 import { leggi, scrivi } from './storage.js';
-import { debounce, distanzaKm } from './dom.js';
+import { el, debounce, distanzaKm } from './dom.js';
 import { cercaOsservazioni } from './inaturalist.js';
 import { cercaAvvistamenti, cercaHotspot, raggruppaPerLuogo } from './ebird.js';
 import { creaLivelloOsservazioni } from './observations-layer.js';
@@ -26,6 +27,8 @@ import { leggiSpot, trovaSpot, salvaSpot, eliminaSpot, aggiungiVisita, togliVisi
 import { creaDiario, creaSchedaSpot, creaModuloSpot } from './spots-ui.js';
 import { creaLivelloSpot } from './spots-layer.js';
 import { creaLivelloHeatmap } from './heatmap-layer.js';
+import { creaSfondi, areeNelPunto } from './basemaps.js';
+import { creaPannelloSfondi, creaSchedaAree } from './basemaps-ui.js';
 import { dataIso } from './weather.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
@@ -106,6 +109,7 @@ const livelloEbird = creaLivelloEbird(raggruppamento, apriSchedaLuogo);
 const livelloInat = creaLivelloOsservazioni(mappa, raggruppamento, apriScheda);
 const livelloSole = creaLivelloSole(mappa);
 const livelloHeatmap = creaLivelloHeatmap(mappa);
+const sfondi = creaSfondi(mappa);
 const livelloSpot = creaLivelloSpot(mappa, apriSpot);
 
 // Toccando un punto vuoto della mappa: con il pannello luce o il modulo di uno
@@ -114,7 +118,9 @@ mappa.on('click', (e) => {
   const punto = { lat: e.latlng.lat, lng: e.latlng.lng };
   if (pannelloAperto === 'luce' && pannelloLuce) pannelloLuce.impostaPunto(punto);
   else if (pannelloAperto === 'moduloSpot' && moduloSpot) moduloSpot.impostaPosizione(punto);
-  else chiudiSheet();
+  else if (pannelloAperto) chiudiSheet();
+  // con le aree protette accese, un tocco su un punto vuoto mostra in quali aree cade
+  else if (sfondi.areeAccese()) mostraAree(punto);
 });
 
 // Tenendo premuto sulla mappa si crea un nuovo spot in quel punto
@@ -550,6 +556,28 @@ function apriModuloSpot(bozza) {
   mostraSopraAlPannello(bozza, 0.55);
 }
 
+// --- Sfondo della mappa e aree protette
+function apriSfondi() {
+  apriPannello('sfondi', t('sfondo.titolo'), creaPannelloSfondi(sfondi));
+}
+document.getElementById('basemap').addEventListener('click', apriSfondi);
+
+let segnoAree = null; // piccolo segno sul punto toccato
+async function mostraAree(punto) {
+  segnoAree?.remove();
+  segnoAree = L.circleMarker([punto.lat, punto.lng], { radius: 6, className: 'segno-aree', interactive: false }).addTo(mappa);
+  apriPannello('aree', t('aree.titolo'), el('p', { class: 'nota' }, t('aree.cerco')), () => {
+    segnoAree?.remove();
+    segnoAree = null;
+  });
+  try {
+    const aree = await areeNelPunto(punto, mappa);
+    if (pannelloAperto === 'aree') apriPannello('aree', t('aree.titolo'), creaSchedaAree(aree), () => segnoAree?.remove());
+  } catch {
+    if (pannelloAperto === 'aree') apriPannello('aree', t('aree.titolo'), el('p', { class: 'nota' }, t('aree.errore')));
+  }
+}
+
 // --- Legenda
 function apriLegenda() {
   apriPannello('legenda', t('legenda'), creaLegenda({ ebirdDisponibile: Boolean(impostazioni.chiaveEbird) }));
@@ -572,6 +600,7 @@ alCambioLingua(() => {
   if (pannelloAperto === 'impostazioni') apriImpostazioni();
   else if (pannelloAperto === 'info') apriInfo();
   else if (pannelloAperto === 'legenda') apriLegenda();
+  else if (pannelloAperto === 'sfondi') apriSfondi();
   else if (pannelloAperto === 'diario') apriDiario();
   else if (pannelloAperto === 'spot' && spotAperto) apriSpot(trovaSpot(spotAperto));
   else if (pannelloAperto === 'moduloSpot') {

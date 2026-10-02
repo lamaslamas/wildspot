@@ -68,6 +68,8 @@ src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di inc
 src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
 src/icons.js               icone SVG dei gruppi di animali e del binocolo
 src/legend.js              legenda dei simboli
+src/basemaps.js            sfondi (stradale, topografica, satellitare) e aree protette EEA
+src/basemaps-ui.js         pannello Sfondo e scheda delle aree protette
 src/heatmap-layer.js       heatmap delle osservazioni (tile di iNaturalist)
 src/list-view.js           vista Elenco (stessi dati della mappa, per distanza o data)
 src/leaflet-global.js      espone Leaflet come `L` globale per il plugin di raggruppamento
@@ -96,6 +98,7 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Simboli sulla mappa**: iNaturalist = badge rotondo con l'icona del gruppo; eBird = etichetta verde con binocolo e numero di specie (stella se ci sono specie notevoli); hotspot senza avvistamenti recenti = etichetta chiara. I punti vicini si raggruppano in bolle con il numero (plugin Leaflet.markercluster). Il pulsante **Legenda** sulla mappa spiega tutti i simboli.
 - **Diario degli spot**: salvato solo nel `localStorage` del dispositivo. Da "I miei spot" si esporta un file JSON (`wildspot-spot-AAAA-MM-GG.json`) e lo si reimporta su un altro dispositivo o dopo aver svuotato il browser; all'importazione gli spot con lo stesso identificativo non vengono duplicati e vince la versione modificata più di recente. Uno spot si crea dal diario (nella tua posizione), tenendo premuto sulla mappa, o con "Salva come spot" nelle schede e nel pannello luce (non per le osservazioni con posizione oscurata).
 - **Heatmap**: livello attivabile dai filtri. Usa le tile `/v1/heatmap` di iNaturalist con gli stessi filtri (gruppi o specie, periodo, solo grado ricerca), quindi conta tutte le osservazioni e non solo le 200 scaricate. eBird non fornisce un servizio simile. Rende meglio con periodi lunghi.
+- **Sfondi e aree protette**: pulsante **Sfondo** sulla mappa. Topografica da OpenTopoMap, satellite da Esri World Imagery. Aree protette dai servizi dell'Agenzia europea dell'ambiente (Natura 2000 e aree nazionali CDDA); con le aree accese, un tocco su un punto vuoto della mappa mostra in quali aree si trova.
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

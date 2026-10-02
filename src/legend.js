@@ -53,6 +53,7 @@ export function creaLegenda({ ebirdDisponibile }) {
       { class: 'legenda' },
       voce(conHtml('', HTML_SPOT), t('legenda.spot'), t('legenda.spotSpiega')),
       voce(conHtml('', '<span class="legenda-heat"></span>'), t('legenda.heatmap'), t('legenda.heatmapSpiega')),
+      voce(conHtml('', '<span class="simbolo-aree grande"></span>'), t('legenda.aree'), t('legenda.areeSpiega')),
       voce(conHtml('', '<span class="mk-gruppo"><span>24</span></span>'), t('legenda.gruppo'), t('legenda.gruppoSpiega')),
       voce(conHtml('', '<span class="gps"></span>'), t('legenda.posizione')),
     ),

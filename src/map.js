@@ -15,13 +15,9 @@ let cerchioRaggio;       // area di ricerca
 export function creaMappa(idElemento) {
   mappa = L.map(idElemento, {
     zoomControl: false, // aggiunto sotto, con etichette tradotte
+    maxZoom: 19, // serve al raggruppamento dei punti; lo sfondo arriva dopo (basemaps.js)
   }).setView([CENTRO_PREDEFINITO.lat, CENTRO_PREDEFINITO.lng], 6);
 
-  // Tile di OpenStreetMap: l'attribuzione è obbligatoria
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(mappa);
 
   // Pulsanti + e −: utili col mouse e per zoomare con una mano sola
   L.control.zoom({ position: 'topleft', zoomInTitle: t('mappa.ingrandisci'), zoomOutTitle: t('mappa.riduci') }).addTo(mappa);
