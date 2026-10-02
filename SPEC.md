@@ -1,6 +1,6 @@
-# Wildspot — web app per fotografi naturalisti
+# WildSpot — web app per fotografi naturalisti
 
-> Il nome dell'app è **Wildspot**: usalo per il titolo, il manifest PWA, il README e il nome del repository (`wildspot`). Questo documento descrive il progetto per Claude Code: leggilo tutto prima di iniziare e lavora una fase alla volta, aspettando la mia conferma prima di passare alla successiva.
+> Il nome dell'app è **WildSpot**: usalo per il titolo, il manifest PWA, il README e il nome del repository (`wildspot`). Questo documento descrive il progetto per Claude Code: leggilo tutto prima di iniziare e lavora una fase alla volta, aspettando la mia conferma prima di passare alla successiva.
 
 ## Obiettivo
 
