@@ -69,7 +69,9 @@ export function creaPannelloImpostazioni(onCambio) {
       type: 'button',
       class: 'btn btn-primario',
       onclick: async () => {
-        const chiave = campoChiave.value.trim();
+        // Una chiave eBird non contiene spazi: togliamo anche quelli aggiunti dalla tastiera
+        const chiave = campoChiave.value.replace(/\s+/g, '');
+        campoChiave.value = chiave;
         if (!chiave) return;
         btnSalva.disabled = true;
         mostraEsito('imp.verifico', 'info');
@@ -78,7 +80,8 @@ export function creaPannelloImpostazioni(onCambio) {
             cambia({ chiaveEbird: chiave }, 'chiave');
             mostraEsito('imp.chiaveOk', 'ok');
           } else {
-            mostraEsito('imp.chiaveNonValida', 'errore');
+            // Testo con simboli (es. un codice con trattini): probabilmente non è la chiave giusta
+            mostraEsito(/[^a-z0-9]/i.test(chiave) ? 'imp.chiaveFormato' : 'imp.chiaveNonValida', 'errore');
           }
         } catch {
           mostraEsito('imp.verificaNonRiuscita', 'errore');
