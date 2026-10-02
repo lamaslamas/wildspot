@@ -68,6 +68,8 @@ src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di inc
 src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
 src/icons.js               icone SVG dei gruppi di animali e del binocolo
 src/legend.js              legenda dei simboli
+src/species-stats.js       mesi e ore in cui una specie si osserva di più (iNaturalist)
+src/species-stats-ui.js    grafici "Quando vederla"
 src/basemaps.js            sfondi (stradale, topografica, satellitare) e aree protette EEA
 src/basemaps-ui.js         pannello Sfondo e scheda delle aree protette
 src/heatmap-layer.js       heatmap delle osservazioni (tile di iNaturalist)
@@ -99,6 +101,8 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Diario degli spot**: salvato solo nel `localStorage` del dispositivo. Da "I miei spot" si esporta un file JSON (`wildspot-spot-AAAA-MM-GG.json`) e lo si reimporta su un altro dispositivo o dopo aver svuotato il browser; all'importazione gli spot con lo stesso identificativo non vengono duplicati e vince la versione modificata più di recente. Uno spot si crea dal diario (nella tua posizione), tenendo premuto sulla mappa, o con "Salva come spot" nelle schede e nel pannello luce (non per le osservazioni con posizione oscurata).
 - **Heatmap**: livello attivabile dai filtri. Usa le tile `/v1/heatmap` di iNaturalist con gli stessi filtri (gruppi o specie, periodo, solo grado ricerca), quindi conta tutte le osservazioni e non solo le 200 scaricate. eBird non fornisce un servizio simile. Rende meglio con periodi lunghi.
 - **Sfondi e aree protette**: pulsante **Sfondo** sulla mappa. Topografica da OpenTopoMap, satellite da Esri World Imagery. Aree protette dai servizi dell'Agenzia europea dell'ambiente (Natura 2000 e aree nazionali CDDA); con le aree accese, un tocco su un punto vuoto della mappa mostra in quali aree si trova.
+- **Quando vederla**: nelle schede, grafici dei mesi (istogramma `month_of_year` di iNaturalist) e delle ore (dall'orario locale delle ultime 200 osservazioni) entro 100 km, allargati a 300 km o al mondo se i dati sono pochi. Per le specie eBird si cerca la specie su iNaturalist dal nome scientifico.
+- **Luna**: fase, percentuale illuminata, sorgere e tramonto nel pannello Luce e meteo (SunCalc).
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

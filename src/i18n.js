@@ -220,6 +220,19 @@ const TESTI = {
     'legenda.gruppoSpiega': 'Tocca per ingrandire la zona e vederli separati.',
     'legenda.posizione': 'La tua posizione',
 
+    // Quando vederla
+    'stat.titolo': 'Quando vederla',
+    'stat.carico': 'Calcolo mesi e orari migliori…',
+    'stat.mesi': 'Mesi',
+    'stat.ore': 'Ore del giorno',
+    'stat.picco': 'più osservata: {elenco}',
+    'stat.fonte': 'Su {n} osservazioni iNaturalist entro {km} km.',
+    'stat.fonteMondo': 'Poche osservazioni in zona: dati di tutto il mondo ({n} osservazioni).',
+    'stat.avvertenza': "Conta quando la gente la osserva, non solo quando è attiva: le ore centrali e i fine settimana pesano di più.",
+    'stat.pochi': 'Troppe poche osservazioni per dire quando vederla.',
+    'stat.errore': 'Dati non disponibili: controlla la connessione.',
+    'stat.mostra': 'Quando vederla',
+
     // Luna
     'luna.nuova': 'Luna nuova',
     'luna.crescente': 'Luna crescente',
@@ -524,6 +537,18 @@ const TESTI = {
     'legenda.gruppo': 'Group of nearby points',
     'legenda.gruppoSpiega': 'Tap to zoom in and see them separately.',
     'legenda.posizione': 'Your location',
+
+    'stat.titolo': 'When to see it',
+    'stat.carico': 'Working out the best months and hours…',
+    'stat.mesi': 'Months',
+    'stat.ore': 'Hours of the day',
+    'stat.picco': 'most observed: {elenco}',
+    'stat.fonte': 'Based on {n} iNaturalist observations within {km} km.',
+    'stat.fonteMondo': 'Few observations nearby: worldwide data ({n} observations).',
+    'stat.avvertenza': 'It counts when people observe it, not only when it is active: midday hours and weekends weigh more.',
+    'stat.pochi': 'Too few observations to say when to see it.',
+    'stat.errore': 'Data unavailable: check your connection.',
+    'stat.mostra': 'When to see it',
 
     'luna.nuova': 'New moon',
     'luna.crescente': 'Waxing crescent',

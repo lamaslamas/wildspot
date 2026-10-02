@@ -4,6 +4,8 @@ import { el } from './dom.js';
 import { gruppo } from './groups.js';
 import { t, locale } from './i18n.js';
 import { htmlOsservazione, iconaPiccola } from './markers.js';
+import { creaQuandoVederla } from './species-stats-ui.js';
+import { taxonDaNomeScientifico } from './species-stats.js';
 
 function dataLeggibile(o) {
   const opzioni = { day: 'numeric', month: 'long', year: 'numeric' };
@@ -59,6 +61,8 @@ export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot, onMappa } = {
       o.osservatore && el('dt', {}, t('scheda.osservatore')),
       o.osservatore && el('dd', {}, o.osservatore),
     ),
+    // Mesi e ore in cui la specie si osserva di più nella zona
+    o.taxonId && creaQuandoVederla(o.taxonId, { lat: o.lat, lng: o.lng }),
     o.oscurata &&
       el(
         'p',
@@ -89,6 +93,25 @@ export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot, onMappa } = {
         ),
     ),
   );
+}
+
+// "Quando vederla" per una specie eBird: si apre a richiesta e cerca la specie
+// su iNaturalist tramite il nome scientifico
+function quandoVederlaEbird(a, luogo) {
+  const blocco = el('details', { class: 'quando-ebird' }, el('summary', {}, `📊 ${t('stat.mostra')}`));
+  blocco.addEventListener('toggle', async () => {
+    if (!blocco.open || blocco.dataset.caricato) return;
+    blocco.dataset.caricato = '1';
+    const attesa = el('p', { class: 'nota' }, t('stat.carico'));
+    blocco.append(attesa);
+    try {
+      const taxonId = await taxonDaNomeScientifico(a.nomeSci);
+      attesa.replaceWith(taxonId ? creaQuandoVederla(taxonId, luogo) : el('p', { class: 'nota' }, t('stat.pochi')));
+    } catch {
+      attesa.replaceWith(el('p', { class: 'nota' }, t('stat.errore')));
+    }
+  });
+  return blocco;
 }
 
 // Data eBird ("AAAA-MM-GG hh:mm" o "AAAA-MM-GG", ora locale del luogo) in forma breve
@@ -157,6 +180,7 @@ export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot, o
                 dataEbird(a.dataOra),
               ),
             ),
+            quandoVederlaEbird(a, luogo),
           ),
         ),
       ),

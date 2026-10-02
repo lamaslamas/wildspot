@@ -2000,3 +2000,77 @@ h3:first-child {
 .luna-testo small {
   color: var(--testo-secondario);
 }
+
+/* ---------- Quando vederla (grafici a barre) ---------- */
+.grafico {
+  margin: 8px 0 14px;
+}
+
+.grafico figcaption {
+  font-size: 0.88rem;
+  color: var(--testo-secondario);
+}
+
+.grafico figcaption b {
+  color: var(--verde-scuro);
+}
+
+.barre {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 84px;
+  margin-top: 6px;
+}
+
+.barra {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.barra i {
+  display: block;
+  width: 100%;
+  max-width: 22px;
+  border-radius: 3px 3px 0 0;
+  background: var(--verde-chiaro);
+}
+
+.barra.attuale i {
+  background: var(--ocra-chiaro);
+}
+
+.barra small {
+  height: 16px;
+  font-size: 0.7rem;
+  line-height: 16px;
+  color: var(--testo-secondario);
+}
+
+.quando-ebird {
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--bordo);
+}
+
+.quando-ebird summary {
+  min-height: 36px;
+  line-height: 36px;
+  color: var(--verde-chiaro);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.quando-ebird .quando h3 {
+  display: none; /* il titolo è già nel riepilogo */
+}
+
+/* le voci eBird con il blocco sotto: il bordo passa al blocco */
+.elenco-avvistamenti li:has(.quando-ebird) a {
+  border-bottom: none;
+}
