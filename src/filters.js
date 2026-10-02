@@ -32,22 +32,22 @@ export function salvaFiltri(filtri) {
   scrivi('filtri', { giorni: filtri.giorni, livelli: filtri.livelli });
 }
 
-// Filtri predefiniti: quelli a cui riporta il pulsante "Azzera"
-export function filtriPredefiniti(impostazioni) {
+// Nessun filtro: tutto visibile. È lo stato a cui porta il pulsante "Azzera filtri"
+// (anche i valori predefiniti delle impostazioni vengono tolti)
+export function filtriVuoti() {
   return {
-    giorni: PERIODO_PREDEFINITO,
-    gruppi: [...impostazioni.gruppiPredefiniti],
+    giorni: 0, // sempre
+    gruppi: GRUPPI.map((g) => g.id),
     taxon: null,
     livelli: Object.fromEntries(LIVELLI.map((l) => [l, true])),
   };
 }
 
-// Quanti filtri sono diversi da quelli predefiniti (per il badge)
-export function contaFiltriAttivi(filtri, impostazioni) {
+// Quante restrizioni sono attive rispetto a "tutto visibile" (per il badge)
+export function contaFiltriAttivi(filtri) {
   let n = 0;
-  if (filtri.giorni !== PERIODO_PREDEFINITO) n++;
-  const predefiniti = [...impostazioni.gruppiPredefiniti].sort().join();
-  if ([...filtri.gruppi].sort().join() !== predefiniti) n++;
+  if (filtri.giorni !== 0) n++;
+  if (filtri.gruppi.length < GRUPPI.length) n++;
   if (filtri.taxon) n++;
   if (LIVELLI.some((l) => !filtri.livelli[l])) n++;
   return n;
@@ -56,23 +56,18 @@ export function contaFiltriAttivi(filtri, impostazioni) {
 /**
  * Costruisce il contenuto del pannello filtri.
  * Ogni modifica viene applicata subito chiamando `onCambio(filtri)`.
- * @param {{ebirdDisponibile: boolean, onApriImpostazioni: () => void, impostazioni: object}} opzioni
+ * @param {{ebirdDisponibile: boolean, onApriImpostazioni: () => void}} opzioni
  */
-export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriImpostazioni, impostazioni }) {
+export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriImpostazioni }) {
   function cambia(modifiche) {
     Object.assign(filtri, modifiche);
     onCambio(filtri);
     ridisegna();
   }
 
-  // --- Azzera: riporta tutti i filtri ai valori predefiniti
-  const elAttivi = el('span', {});
-  const barraAzzera = el(
-    'div',
-    { class: 'barra-azzera' },
-    elAttivi,
-    el('button', { type: 'button', class: 'btn', onclick: () => cambia(filtriPredefiniti(impostazioni)) }, t('filtri.azzera')),
-  );
+  // --- Azzera: toglie tutti i filtri (in fondo al pannello, sempre visibile)
+  const btnAzzera = el('button', { type: 'button', class: 'btn btn-largo', onclick: () => cambia(filtriVuoti()) });
+  const piedeAzzera = el('div', { class: 'piede-azzera' }, btnAzzera);
 
   // --- Livelli
   const livelli = el('div', { class: 'chips' });
@@ -148,9 +143,9 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
   campo.addEventListener('input', () => cercaSuggerimenti(campo.value.trim()));
 
   function ridisegna() {
-    const attivi = contaFiltriAttivi(filtri, impostazioni);
-    barraAzzera.hidden = attivi === 0;
-    elAttivi.textContent = t(attivi === 1 ? 'filtri.attivi1' : 'filtri.attivi', { n: attivi });
+    const attivi = contaFiltriAttivi(filtri);
+    btnAzzera.disabled = attivi === 0;
+    btnAzzera.textContent = attivi ? `${t('filtri.azzera')} (${attivi})` : t('filtri.nessunFiltro');
 
     livelli.replaceChildren(
       ...LIVELLI.map((id) => {
@@ -231,7 +226,6 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
   return el(
     'div',
     { class: 'filtri' },
-    barraAzzera,
     el('h3', {}, t('filtri.livelli')),
     livelli,
     avvisoEbird,
@@ -244,5 +238,6 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
     specieScelta,
     campo,
     suggerimenti,
+    piedeAzzera,
   );
 }

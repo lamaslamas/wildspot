@@ -385,7 +385,7 @@ document.getElementById('light').addEventListener('click', () => {
 
 // --- Filtri
 function aggiornaBadge() {
-  const n = contaFiltriAttivi(stato.filtri, impostazioni);
+  const n = contaFiltriAttivi(stato.filtri);
   elBadge.hidden = n === 0;
   elBadge.textContent = n;
 }
@@ -399,7 +399,7 @@ function apriFiltri() {
       aggiornaSpotSullaMappa();
       caricaConCalma();
     },
-    { ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriImpostazioni: apriImpostazioni, impostazioni },
+    { ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriImpostazioni: apriImpostazioni },
   );
   apriPannello('filtri', t('filtri'), pannello);
 }

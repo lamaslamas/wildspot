@@ -129,9 +129,8 @@ const TESTI = {
 
     // Livelli della mappa
     'filtri.livelli': 'Livelli',
-    'filtri.azzera': 'Azzera filtri',
-    'filtri.attivi1': '1 filtro modificato',
-    'filtri.attivi': '{n} filtri modificati',
+    'filtri.azzera': 'Azzera tutti i filtri',
+    'filtri.nessunFiltro': 'Nessun filtro attivo: vedi tutto',
     'livello.inat': 'iNaturalist',
     'livello.ebirdAvvistamenti': 'Avvistamenti eBird',
     'livello.ebirdHotspot': 'Hotspot eBird',
@@ -386,9 +385,8 @@ const TESTI = {
     'imp.predefinitiNota': 'Used when the app opens; while using it you can change them from the bottom bar and the filters.',
 
     'filtri.livelli': 'Layers',
-    'filtri.azzera': 'Reset filters',
-    'filtri.attivi1': '1 filter changed',
-    'filtri.attivi': '{n} filters changed',
+    'filtri.azzera': 'Clear all filters',
+    'filtri.nessunFiltro': 'No filters on: showing everything',
     'livello.inat': 'iNaturalist',
     'livello.ebirdAvvistamenti': 'eBird sightings',
     'livello.ebirdHotspot': 'eBird hotspots',
