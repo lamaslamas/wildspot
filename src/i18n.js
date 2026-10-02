@@ -21,7 +21,6 @@ const TESTI = {
     'hero.puntoDiario': 'Diario dei tuoi spot, salvato sul telefono',
     'hero.inArrivo': 'in arrivo',
     'hero.apriMappa': 'Apri la mappa',
-    'hero.scorri': 'Scorri giù per la mappa',
     lingua: 'Lingua',
 
     // Barra e comandi
@@ -116,7 +115,6 @@ const TESTI = {
     'hero.puntoDiario': 'A journal of your spots, saved on your phone',
     'hero.inArrivo': 'coming soon',
     'hero.apriMappa': 'Open the map',
-    'hero.scorri': 'Scroll down for the map',
     lingua: 'Language',
 
     'aria.mappa': 'Map',

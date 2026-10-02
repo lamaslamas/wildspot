@@ -93,6 +93,7 @@ body {
 }
 
 .hero-titolo .evidenza {
+  display: block; /* "vicino a te" su una riga a sé */
   color: var(--ocra-testo);
 }
 
@@ -152,7 +153,7 @@ body {
 }
 
 .hero-cta {
-  align-self: flex-start;
+  align-self: center;
   gap: 8px;
   margin-top: 18px;
   padding: 0 22px;
@@ -161,20 +162,8 @@ body {
   box-shadow: 0 3px 10px rgb(39 89 54 / 0.3);
 }
 
-/* Freccia che invita a scorrere verso la mappa */
-.scorri {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  align-self: center;
-  padding: 6px 16px 0;
-  color: var(--verde);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.scorri svg {
+/* La freccia del pulsante rimbalza: invita a scorrere verso la mappa */
+.hero-cta .freccia {
   animation: rimbalzo 1.6s ease-in-out infinite;
 }
 
@@ -184,13 +173,26 @@ body {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scorri svg {
+  .hero-cta .freccia {
     animation: none;
+  }
+}
+
+/* Su schermi grandi la presentazione è alta quanto il suo contenuto:
+   la mappa si vede già sotto, senza dover scorrere un intero schermo */
+@media (min-width: 900px) {
+  .hero {
+    min-height: 0; /* main.js poi la fissa al pixel intero partendo da questa */
+    padding-bottom: 40px;
+  }
+
+  .hero-testo {
+    padding: 32px 0 8px;
   }
 }
 
