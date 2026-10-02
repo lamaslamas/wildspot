@@ -2,6 +2,7 @@
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { t } from './i18n.js';
 
 // Centro di riserva se il GPS non è disponibile: il centro Italia
 export const CENTRO_PREDEFINITO = { lat: 42.5, lng: 12.5 };
@@ -13,7 +14,7 @@ let cerchioRaggio;       // area di ricerca
 
 export function creaMappa(idElemento) {
   mappa = L.map(idElemento, {
-    zoomControl: false, // lo zoom si fa con le dita; i pulsanti ingombrano su mobile
+    zoomControl: false, // aggiunto sotto, con etichette tradotte
   }).setView([CENTRO_PREDEFINITO.lat, CENTRO_PREDEFINITO.lng], 6);
 
   // Tile di OpenStreetMap: l'attribuzione è obbligatoria
@@ -22,6 +23,8 @@ export function creaMappa(idElemento) {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(mappa);
 
+  // Pulsanti + e −: utili col mouse e per zoomare con una mano sola
+  L.control.zoom({ position: 'topleft', zoomInTitle: t('mappa.ingrandisci'), zoomOutTitle: t('mappa.riduci') }).addTo(mappa);
   L.control.scale({ imperial: false, position: 'topleft' }).addTo(mappa);
 
   return mappa;

@@ -18,6 +18,7 @@ export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
   mappa.createPane('incertezza').style.zIndex = 350;
 
   let indicatori = [];
+  let perId = new Map(); // id osservazione -> { indicatore, o }
   let selezionato = null;
   let idSelezionato = null; // per ritrovare la selezione dopo un ricaricamento
   let areaEvidenziata = null;
@@ -26,6 +27,7 @@ export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
     const daRiselezionare = idSelezionato;
     togliEvidenziazione();
     raggruppamento.removeLayers(indicatori);
+    perId = new Map();
 
     indicatori = osservazioni.map((o) => {
       const punto = [o.lat, o.lng];
@@ -38,6 +40,7 @@ export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
         evidenzia(indicatore, o);
       });
       if (o.id === daRiselezionare) setTimeout(() => evidenzia(indicatore, o)); // dopo l'aggiunta alla mappa
+      perId.set(o.id, { indicatore, o });
       return indicatore;
     });
     raggruppamento.addLayers(indicatori);
@@ -70,5 +73,11 @@ export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
     areaEvidenziata = null;
   }
 
-  return { aggiorna, togliEvidenziazione };
+  // Seleziona un'osservazione dall'esterno (per esempio dall'elenco)
+  function seleziona(id) {
+    const voce = perId.get(id);
+    if (voce) evidenzia(voce.indicatore, voce.o);
+  }
+
+  return { aggiorna, togliEvidenziazione, seleziona };
 }

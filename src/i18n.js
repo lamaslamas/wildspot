@@ -25,7 +25,7 @@ const TESTI = {
 
     // Barra e comandi
     'aria.mappa': 'Mappa',
-    'aria.tornaSu': 'Torna alla presentazione',
+    'aria.tornaSu': 'Presentazione di WildSpot',
     'aria.info': 'Informazioni e comportamento corretto',
     'aria.posizione': 'Centra sulla mia posizione',
     'aria.comandi': 'Comandi mappa',
@@ -216,6 +216,22 @@ const TESTI = {
     'legenda.gruppoSpiega': 'Tocca per ingrandire la zona e vederli separati.',
     'legenda.posizione': 'La tua posizione',
 
+    // Vista Mappa / Elenco
+    'vista.mappa': 'Mappa',
+    'vista.elenco': 'Elenco',
+    'aria.vista': 'Mostra come mappa o come elenco',
+    'aria.espandi': 'Allarga o riduci il pannello',
+    'elenco.ordine': 'Ordina',
+    'elenco.vicini': 'Più vicini',
+    'elenco.recenti': 'Più recenti',
+    'elenco.vuoto': 'Nessun risultato con i filtri attuali: prova ad allargare il raggio o il periodo.',
+    'elenco.specieRecenti': '{n} specie recenti',
+    'elenco.specieRecenti1': '1 specie recente',
+    'elenco.approssimativa': 'posizione approssimativa',
+    'scheda.mostraMappa': 'Mostra sulla mappa',
+    'mappa.ingrandisci': 'Ingrandisci',
+    'mappa.riduci': 'Riduci',
+
     // Diario degli spot
     'spot.titolo': 'I miei spot',
     'spot.nuovo': 'Nuovo spot',
@@ -275,7 +291,7 @@ const TESTI = {
     lingua: 'Language',
 
     'aria.mappa': 'Map',
-    'aria.tornaSu': 'Back to the introduction',
+    'aria.tornaSu': 'About WildSpot',
     'aria.info': 'Information and good practice',
     'aria.posizione': 'Center on my location',
     'aria.comandi': 'Map controls',
@@ -453,6 +469,21 @@ const TESTI = {
     'legenda.gruppo': 'Group of nearby points',
     'legenda.gruppoSpiega': 'Tap to zoom in and see them separately.',
     'legenda.posizione': 'Your location',
+
+    'vista.mappa': 'Map',
+    'vista.elenco': 'List',
+    'aria.vista': 'Show as map or as list',
+    'aria.espandi': 'Expand or shrink the panel',
+    'elenco.ordine': 'Sort',
+    'elenco.vicini': 'Nearest',
+    'elenco.recenti': 'Most recent',
+    'elenco.vuoto': 'No results with the current filters: try a wider radius or a longer period.',
+    'elenco.specieRecenti': '{n} recent species',
+    'elenco.specieRecenti1': '1 recent species',
+    'elenco.approssimativa': 'approximate location',
+    'scheda.mostraMappa': 'Show on map',
+    'mappa.ingrandisci': 'Zoom in',
+    'mappa.riduci': 'Zoom out',
 
     'spot.titolo': 'My spots',
     'spot.nuovo': 'New spot',

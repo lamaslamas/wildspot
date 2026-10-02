@@ -29,10 +29,14 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-  /* aiuta la pagina a fermarsi esattamente sulla presentazione o sulla mappa */
-  scroll-snap-type: y proximity;
+/* La pagina non scorre: l'app occupa sempre tutto lo schermo, così i gesti
+   sulla mappa muovono solo la mappa. overscroll-behavior evita anche il
+   "tira per ricaricare" del browser mentre si sposta la mappa. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -40,24 +44,28 @@ body {
   background: var(--crema);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+/* ---------- Presentazione (schermata introduttiva sopra l'app) ---------- */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  overflow-y: auto; /* scorre solo se il contenuto non ci sta */
+  overscroll-behavior: contain;
+  background: var(--crema);
 }
 
-/* ---------- Presentazione ---------- */
+.intro[hidden] {
+  display: none;
+}
+
 .hero {
-  /* lascia visibili in basso ~130px della sezione mappa: invita a scorrere */
-  min-height: calc(100vh - 130px);
-  min-height: calc(100svh - 130px);
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-  padding: calc(env(safe-area-inset-top) + 12px) 16px 22px;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px);
   background:
     radial-gradient(120% 60% at 100% 0%, rgb(201 131 1 / 0.12), transparent 60%),
     linear-gradient(180deg, var(--crema) 0%, var(--verde-tenue) 100%);
-  scroll-snap-align: start;
 }
 
 .hero-top {
@@ -162,11 +170,6 @@ body {
   box-shadow: 0 3px 10px rgb(39 89 54 / 0.3);
 }
 
-/* La freccia del pulsante rimbalza: invita a scorrere verso la mappa */
-.hero-cta .freccia {
-  animation: rimbalzo 1.6s ease-in-out infinite;
-}
-
 @keyframes rimbalzo {
   0%,
   100% {
@@ -178,21 +181,11 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-cta .freccia {
-    animation: none;
-  }
-}
-
-/* Su schermi grandi la presentazione è alta quanto il suo contenuto:
-   la mappa si vede già sotto, senza dover scorrere un intero schermo */
-@media (min-width: 900px) {
-  .hero {
-    min-height: 0; /* main.js poi la fissa al pixel intero partendo da questa */
-    padding-bottom: 40px;
-  }
-
-  .hero-testo {
-    padding: 32px 0 8px;
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -223,36 +216,64 @@ body {
   color: #fff;
 }
 
-/* ---------- Applicazione (alta uno schermo) ---------- */
+/* ---------- Applicazione (sempre a tutto schermo) ---------- */
 .app {
-  position: relative;
-  height: 100vh;
-  height: 100svh;
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  scroll-snap-align: start;
-  /* bordo arrotondato e ombra: sembra un pannello che sale da sotto la presentazione.
-     Niente overflow: hidden qui, altrimenti compaiono righe tra le tile della mappa */
-  margin-top: -14px;
-  border-radius: 18px 18px 0 0;
   background: var(--crema);
-  box-shadow: 0 -6px 20px rgb(27 63 38 / 0.14);
 }
 
-.app .topbar {
-  border-radius: 18px 18px 0 0;
-}
-
-/* Barra superiore */
+/* Barra superiore: una riga di comandi e, sotto, il messaggio di stato */
 .topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: calc(env(safe-area-inset-top) + 6px) 16px 6px;
+  padding: calc(env(safe-area-inset-top) + 6px) 16px 4px;
   background: var(--crema);
   color: var(--verde-scuro);
   border-bottom: 1px solid var(--bordo);
+}
+
+.topbar-riga {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Interruttore Mappa / Elenco */
+.vista {
+  flex: 1;
+  display: flex;
+  max-width: 260px;
+  padding: 3px;
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.vista-btn {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--verde-scuro);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.vista-btn[aria-selected='true'] {
+  background: var(--verde);
+  color: #fff;
+}
+
+.topbar-riga #settings {
+  margin-left: auto;
+}
+
+.topbar-riga #info {
+  margin-left: -8px;
 }
 
 .topbar-logo {
@@ -261,7 +282,11 @@ body {
   place-items: center;
   width: 44px;
   height: 44px;
-  margin: -4px 0 -4px -6px;
+  margin: -2px 0 -2px -8px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 .topbar-logo img {
@@ -271,36 +296,39 @@ body {
 }
 
 .status {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
+  margin: 2px 0 0;
   font-size: 0.85rem;
   /* interlinea in pixel interi: la barra resta alta un numero intero di pixel,
      altrimenti la mappa sotto finisce su mezzi pixel e tra le tile compaiono righe */
   line-height: 18px;
-  text-align: right;
-  /* al massimo due righe, poi puntini */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  min-height: 18px;
+  color: var(--testo-secondario);
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Gli errori vanno a capo su una riga dedicata, sotto il titolo */
+/* Gli errori possono andare a capo */
 .status[data-tipo='errore'] {
-  flex-basis: 100%;
-  order: 3; /* sotto titolo e pulsante info */
-  text-align: left;
-  -webkit-line-clamp: 4;
+  white-space: normal;
   color: var(--errore);
   font-weight: 600;
 }
 
-/* Mappa a tutta altezza */
-.map-wrap {
+/* Zona centrale: mappa oppure elenco */
+.contenuto {
   position: relative;
   flex: 1;
   min-height: 0;
+}
+
+.map-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.map-wrap[hidden] {
+  display: none;
 }
 
 #map {
@@ -464,7 +492,9 @@ input:focus-visible {
   right: 0;
   bottom: 0;
   z-index: 1000;
-  max-height: 72vh;
+  /* di base si apre a metà schermo: la mappa resta visibile sopra */
+  max-height: 55vh;
+  max-height: 55dvh;
   display: flex;
   flex-direction: column;
   background: var(--sfondo);
@@ -478,6 +508,36 @@ input:focus-visible {
 .sheet.aperto {
   transform: none;
   visibility: visible;
+}
+
+/* Allargato con la maniglia (o trascinando in su) */
+.sheet.espanso {
+  max-height: calc(100dvh - 24px);
+}
+
+.sheet-maniglia {
+  flex: none; /* non deve schiacciarsi quando il contenuto è lungo */
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: grab;
+}
+
+.sheet-maniglia span {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bordo);
+}
+
+.sheet-head {
+  flex: none;
+  padding-top: 2px;
+  touch-action: none; /* il trascinamento della testata è gestito da sheet.js */
 }
 
 .sheet-head {
@@ -501,11 +561,37 @@ input:focus-visible {
 }
 
 @media (min-width: 700px) {
-  /* Su tablet e desktop il pannello non occupa tutta la larghezza */
-  .sheet {
-    left: 16px;
+  /* Su tablet e desktop il pannello è una colonna a sinistra, tra la barra in
+     alto e quella in basso: non copre i comandi e lascia libera la mappa.
+     Le altezze delle barre arrivano da main.js (--alto-topbar, --alto-controlli). */
+  .sheet,
+  .sheet.sheet-basso,
+  .sheet.espanso {
+    left: 12px;
     right: auto;
-    width: 420px;
+    top: calc(var(--alto-topbar, 70px) + 12px);
+    bottom: calc(var(--alto-controlli, 70px) + 12px);
+    width: 400px;
+    max-height: none;
+    border-radius: 16px;
+    transform: translateX(-110%);
+  }
+
+  .sheet.aperto {
+    transform: none;
+  }
+
+  .sheet-maniglia {
+    display: none;
+  }
+
+  /* Comandi in basso più compatti su schermi larghi */
+  .radius {
+    flex: 0 1 360px;
+  }
+
+  .controls {
+    justify-content: space-between;
   }
 }
 
@@ -688,7 +774,7 @@ h3:first-child {
 .scheda-foto img {
   display: block;
   width: 100%;
-  max-height: 38vh;
+  max-height: 24vh; /* nel pannello a metà schermo restano visibili anche i dati */
   object-fit: cover;
   border-radius: 10px;
   background: var(--bordo);
@@ -986,8 +1072,8 @@ h3:first-child {
 
 /* ---------- Luce e meteo: pannello ---------- */
 /* Pannello più basso, per lasciare visibili punto e freccia del sole */
-.sheet.sheet-basso {
-  max-height: 55vh;
+.sheet.sheet-basso:not(.espanso) {
+  max-height: 55dvh;
 }
 
 .riga-data {
@@ -1206,8 +1292,8 @@ h3:first-child {
 
 /* iNaturalist: badge rotondo con l'icona del gruppo */
 .mk-inat {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border: 2px solid #fff;
   border-radius: 50%;
   background: var(--c);
@@ -1215,8 +1301,8 @@ h3:first-child {
 }
 
 .mk-inat svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Posizione oscurata: colori invertiti e bordo tratteggiato = "posizione incerta" */
@@ -1229,8 +1315,8 @@ h3:first-child {
 /* eBird: etichetta verde con binocolo e numero di specie */
 .mk-ebird {
   gap: 4px;
-  height: 28px;
-  padding: 0 8px 0 6px;
+  height: 32px;
+  padding: 0 9px 0 7px;
   border: 2px solid #fff;
   border-radius: 8px;
   background: var(--verde);
@@ -1241,8 +1327,8 @@ h3:first-child {
 }
 
 .mk-ebird svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .mk-ebird.mk-notevole {
@@ -1256,8 +1342,8 @@ h3:first-child {
 
 /* Hotspot senza avvistamenti recenti: etichetta chiara e più piccola */
 .mk-hotspot {
-  width: 24px;
-  height: 22px;
+  width: 28px;
+  height: 25px;
   border: 2px solid var(--verde);
   border-radius: 6px;
   background: var(--crema);
@@ -1620,4 +1706,139 @@ h3:first-child {
   padding: 10px 12px;
   resize: vertical;
   font-weight: 400;
+}
+
+/* ---------- Pulsanti di zoom ---------- */
+/* doppia classe sul contenitore per prevalere sulle regole di Leaflet */
+.leaflet-container.leaflet-container .leaflet-bar a {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 1.4rem;
+  color: var(--verde-scuro);
+}
+
+.leaflet-container.leaflet-container .leaflet-bar {
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+}
+
+/* ---------- Elenco ---------- */
+.elenco {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--sfondo);
+}
+
+.elenco[hidden] {
+  display: none;
+}
+
+.elenco-testa {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 16px;
+  background: rgb(255 255 255 / 0.96);
+  border-bottom: 1px solid var(--bordo);
+}
+
+.segmenti-elenco .segmento {
+  min-height: 40px;
+}
+
+.elenco-voci {
+  margin: 0;
+  padding: 0 16px 16px;
+  list-style: none;
+}
+
+.voce {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--bordo);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.voce .icona-mini {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.voce-testo {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.voce-testo b,
+.voce-testo i {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voce-testo i {
+  font-size: 0.88rem;
+  color: var(--testo-secondario);
+}
+
+.voce-testo small {
+  font-size: 0.82rem;
+  color: var(--testo-secondario);
+}
+
+.voce-foto {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  margin-left: 8px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--bordo);
+}
+
+@media (min-width: 700px) {
+  /* Su schermi larghi l'elenco non si allarga troppo */
+  .elenco-testa,
+  .elenco-voci {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 700px) {
+  /* Con la colonna laterale aperta, i comandi a sinistra della mappa e
+     l'elenco si spostano alla sua destra invece di finirci sotto */
+  .leaflet-top.leaflet-left,
+  .fab-diario,
+  .elenco {
+    transition: left 0.2s ease-out, padding-left 0.2s ease-out;
+  }
+
+  .pannello-aperto .leaflet-top.leaflet-left {
+    left: 412px;
+  }
+
+  .pannello-aperto .fab-diario {
+    left: 424px;
+  }
+
+  .pannello-aperto .elenco {
+    padding-left: 412px;
+  }
 }

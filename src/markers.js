@@ -61,11 +61,11 @@ export function creaIndicatore(latlng, html, { titolo, sopra = false } = {}) {
 }
 
 // Raggruppamento: i punti vicini diventano una bolla con il numero;
-// toccandola si ingrandisce la zona. Da zoom 15 in su ogni punto è separato.
+// toccandola si ingrandisce la zona. Da zoom 14 in su ogni punto è separato.
 export function creaRaggruppamento(mappa) {
   return L.markerClusterGroup({
-    maxClusterRadius: 44,
-    disableClusteringAtZoom: 15,
+    maxClusterRadius: 40,
+    disableClusteringAtZoom: 14,
     spiderfyOnMaxZoom: false,
     showCoverageOnHover: false,
     chunkedLoading: true,

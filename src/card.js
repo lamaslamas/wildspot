@@ -22,7 +22,7 @@ function distanzaLeggibile(metri) {
  * @param {object} o osservazione normalizzata
  * @param {{onSoloSpecie?: (o:object) => void, onLuce?: (punto) => void, onSalvaSpot?: (bozza) => void}} azioni
  */
-export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot } = {}) {
+export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot, onMappa } = {}) {
   const g = gruppo(o.gruppo);
 
   return el(
@@ -68,7 +68,8 @@ export function creaScheda(o, { onSoloSpecie, onLuce, onSalvaSpot } = {}) {
     el(
       'div',
       { class: 'scheda-azioni' },
-      el('a', { class: 'btn btn-primario', href: o.link, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: o.fonte })),
+      onMappa && el('button', { class: 'btn btn-primario', type: 'button', onclick: onMappa }, t('scheda.mostraMappa')),
+      el('a', { class: `btn${onMappa ? '' : ' btn-primario'}`, href: o.link, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: o.fonte })),
       onSoloSpecie &&
         o.taxonId &&
         el('button', { class: 'btn', type: 'button', onclick: () => onSoloSpecie(o) }, t('scheda.soloSpecie')),
@@ -105,7 +106,7 @@ function dataEbird(testo) {
  * @param {object} luogo  luogo creato da raggruppaPerLuogo
  * @param {{conAvvistamenti: boolean, onLuce?: (punto) => void, onSalvaSpot?: (bozza) => void}} opzioni
  */
-export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot }) {
+export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot, onMappa }) {
   const avvistamenti = conAvvistamenti ? luogo.avvistamenti : [];
   const linkEbird = luogo.hotspot
     ? `https://ebird.org/hotspot/${luogo.locId}`
@@ -163,8 +164,9 @@ export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce, onSalvaSpot })
     el(
       'div',
       { class: 'scheda-azioni' },
+      onMappa && el('button', { class: 'btn btn-primario', type: 'button', onclick: onMappa }, t('scheda.mostraMappa')),
       linkEbird &&
-        el('a', { class: 'btn btn-primario', href: linkEbird, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: 'eBird' })),
+        el('a', { class: `btn${onMappa ? '' : ' btn-primario'}`, href: linkEbird, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: 'eBird' })),
       onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: luogo.lat, lng: luogo.lng }) }, t('scheda.luceMeteo')),
       onSalvaSpot &&
         el(

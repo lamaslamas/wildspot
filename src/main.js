@@ -12,6 +12,7 @@ import { cercaAvvistamenti, cercaHotspot, raggruppaPerLuogo } from './ebird.js';
 import { creaLivelloOsservazioni } from './observations-layer.js';
 import { creaLivelloEbird } from './ebird-layer.js';
 import { creaRaggruppamento } from './markers.js';
+import { creaElenco } from './list-view.js';
 import { creaScheda, creaSchedaLuogo } from './card.js';
 import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri } from './filters.js';
 import { leggiImpostazioni, creaPannelloImpostazioni } from './settings.js';
@@ -31,31 +32,39 @@ import { creaSelettoreLingua } from './language-switch.js';
 traduciPagina();
 document.querySelector('[data-selettore-lingua]').append(creaSelettoreLingua());
 
-// L'altezza della presentazione dipende dal testo e può risultare frazionaria
-// (es. 634,7px): la mappa sotto finirebbe su mezzi pixel e tra le tile
-// comparirebbero righe sottili. La arrotondiamo al pixel intero.
-const elHero = document.querySelector('.hero');
-function arrotondaAltezzaHero() {
-  elHero.style.minHeight = '';
-  elHero.style.minHeight = `${Math.ceil(elHero.getBoundingClientRect().height)}px`;
-}
-arrotondaAltezzaHero();
-window.addEventListener('resize', debounce(arrotondaAltezzaHero, 150));
-alCambioLingua(arrotondaAltezzaHero);
+// --- Presentazione: schermata introduttiva mostrata alla prima apertura;
+// si riapre toccando il logo in alto a sinistra
+const elIntro = document.getElementById('intro');
+const btnChiudiIntro = document.getElementById('close-intro');
 
-// Chi ha già raggiunto la mappa in una visita precedente la ritrova subito:
-// la presentazione resta comunque sopra, basta scorrere in su
-const elApp = document.getElementById('app');
-if (leggi('mappaVista', false)) {
-  window.scrollTo({ top: elApp.offsetTop, behavior: 'instant' });
-} else {
-  const osservatore = new IntersectionObserver(([voce]) => {
-    if (!voce.isIntersecting) return;
-    scrivi('mappaVista', true);
-    osservatore.disconnect();
-  }, { threshold: 0.9 });
-  osservatore.observe(elApp);
+function mostraIntro() {
+  elIntro.hidden = false;
+  elIntro.scrollTop = 0;
+  btnChiudiIntro.focus();
 }
+
+function chiudiIntro() {
+  elIntro.hidden = true;
+  scrivi('introVista', true);
+  mappa.invalidateSize(); // la mappa ricalcola le sue dimensioni
+}
+
+btnChiudiIntro.addEventListener('click', chiudiIntro);
+document.getElementById('open-intro').addEventListener('click', mostraIntro);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !elIntro.hidden) chiudiIntro();
+});
+// "mappaVista" è il nome usato dalle versioni precedenti
+if (!leggi('introVista', false) && !leggi('mappaVista', false)) mostraIntro();
+
+// Altezze delle barre in alto e in basso, usate dal CSS per il pannello laterale su desktop
+const osservaAltezze = new ResizeObserver(() => {
+  const radice = document.documentElement.style;
+  radice.setProperty('--alto-topbar', `${document.querySelector('.topbar').offsetHeight}px`);
+  radice.setProperty('--alto-controlli', `${document.querySelector('.controls').offsetHeight}px`);
+});
+osservaAltezze.observe(document.querySelector('.topbar'));
+osservaAltezze.observe(document.querySelector('.controls'));
 
 // Stato dell'app
 const impostazioni = leggiImpostazioni();
@@ -130,6 +139,49 @@ mappa.on('moveend', () => {
   caricaConCalma();
 });
 
+// --- Vista Mappa / Elenco
+const elElenco = document.getElementById('elenco');
+const elMappaWrap = document.querySelector('.map-wrap');
+const elenco = creaElenco(elElenco, {
+  onApriOsservazione: (o) => apriScheda(o),
+  onApriLuogo: (luogo, opzioni) => apriSchedaLuogo(luogo, opzioni),
+});
+let vista = leggi('vista', 'mappa') === 'elenco' ? 'elenco' : 'mappa';
+let ultimiDati = { osservazioni: [], luoghi: [], visibili: { avvistamenti: false, hotspot: false } };
+
+function aggiornaElenco() {
+  if (vista !== 'elenco') return; // si disegna quando lo si apre
+  elenco.aggiorna({ ...ultimiDati, riferimento: stato.posizioneGps || stato.centro });
+}
+
+function impostaVista(nuova) {
+  vista = nuova;
+  scrivi('vista', nuova);
+  const inElenco = nuova === 'elenco';
+  elMappaWrap.hidden = inElenco;
+  elElenco.hidden = !inElenco;
+  document.getElementById('vista-mappa').setAttribute('aria-selected', String(!inElenco));
+  document.getElementById('vista-elenco').setAttribute('aria-selected', String(inElenco));
+  if (inElenco) aggiornaElenco();
+  else mappa.invalidateSize(); // la mappa era nascosta: ricalcola le dimensioni
+}
+document.getElementById('vista-mappa').addEventListener('click', () => impostaVista('mappa'));
+document.getElementById('vista-elenco').addEventListener('click', () => impostaVista('elenco'));
+
+// Dall'elenco: passa alla mappa, ingrandisce sul punto, riapre la scheda
+// (ora senza il pulsante "Mostra sulla mappa") e seleziona il punto
+function mostraSullaMappa(punto, seleziona, riapri) {
+  impostaVista('mappa');
+  ignoraProssimoSpostamento = true;
+  mappa.setView([punto.lat, punto.lng], Math.max(mappa.getZoom(), 15), { animate: false });
+  // da zoom 14 i punti non sono più raggruppati: aspettiamo che compaiano
+  setTimeout(() => {
+    riapri?.(); // prima la scheda: aprendola si toglie l'evidenziazione precedente
+    seleziona?.();
+    mostraSopraAlPannello(punto, 0.55);
+  }, 350);
+}
+
 // --- Caricamento dei dati
 let richiestaInCorso = null;
 
@@ -158,6 +210,8 @@ async function caricaDati() {
   if (!vuoiInat && !livelloEbirdAcceso) {
     livelloInat.aggiorna([]);
     livelloEbird.aggiorna([], { avvistamenti: false, hotspot: false });
+    ultimiDati = { osservazioni: [], luoghi: [], visibili: { avvistamenti: false, hotspot: false } };
+    aggiornaElenco();
     mostraMessaggio('stato.nessunLivello');
     return;
   }
@@ -187,10 +241,11 @@ async function caricaDati() {
       ? avvistamenti.value.filter((a) => corrispondeAllaSpecie(a.nomeSci, filtri.taxon))
       : [];
   const hotspotOk = hotspot.status === 'fulfilled' ? hotspot.value : [];
-  livelloEbird.aggiorna(raggruppaPerLuogo(avvistamentiOk, hotspotOk), {
-    avvistamenti: filtri.livelli.ebirdAvvistamenti,
-    hotspot: filtri.livelli.ebirdHotspot,
-  });
+  const luoghi = raggruppaPerLuogo(avvistamentiOk, hotspotOk);
+  const visibili = { avvistamenti: filtri.livelli.ebirdAvvistamenti, hotspot: filtri.livelli.ebirdHotspot };
+  livelloEbird.aggiorna(luoghi, visibili);
+  ultimiDati = { osservazioni, luoghi, visibili };
+  aggiornaElenco();
 
   // Messaggio: prima gli errori (quelli di eBird hanno la precedenza se la
   // chiave è sbagliata, perché si risolvono dalle impostazioni), poi il conteggio
@@ -244,6 +299,7 @@ function apriScheda(o) {
   const scheda = creaScheda(o, {
     onLuce: apriLuce,
     onSalvaSpot: nuovoSpot,
+    onMappa: vista === 'elenco' ? () => mostraSullaMappa(o, () => livelloInat.seleziona(o.id), () => apriScheda(o)) : null,
     onSoloSpecie: (oss) => {
       stato.filtri.taxon = { id: oss.taxonId, nomeComune: oss.nomeComune, nomeSci: oss.nomeSci };
       aggiornaBadge();
@@ -252,18 +308,28 @@ function apriScheda(o) {
     },
   });
   apriPannello('scheda', o.nomeComune || o.nomeSci, scheda, livelloInat.togliEvidenziazione);
-  mostraSopraAlPannello(o, 0.72);
+  if (vista === 'mappa') mostraSopraAlPannello(o, 0.55);
 }
 
 function apriSchedaLuogo(luogo, opzioni) {
-  apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, { ...opzioni, onLuce: apriLuce, onSalvaSpot: nuovoSpot }), livelloEbird.togliEvidenziazione);
-  mostraSopraAlPannello(luogo, 0.72);
+  const onMappa =
+    vista === 'elenco'
+      ? () => mostraSullaMappa(luogo, () => livelloEbird.seleziona(luogo.locId), () => apriSchedaLuogo(luogo, opzioni))
+      : null;
+  apriPannello(
+    'scheda',
+    luogo.nome,
+    creaSchedaLuogo(luogo, { ...opzioni, onLuce: apriLuce, onSalvaSpot: nuovoSpot, onMappa }),
+    livelloEbird.togliEvidenziazione,
+  );
+  if (vista === 'mappa') mostraSopraAlPannello(luogo, 0.55);
 }
 
 // --- Luce e meteo
 let pannelloLuce = null;
 
 function apriLuce(punto) {
+  if (vista === 'elenco') impostaVista('mappa'); // la direzione del sole si vede sulla mappa
   if (pannelloAperto === 'luce' && pannelloLuce) {
     pannelloLuce.impostaPunto(punto);
   } else {
@@ -287,13 +353,15 @@ function apriLuce(punto) {
 
 // Sposta la mappa in modo che il punto stia al centro della parte non coperta dal pannello.
 // `altezzaMassima` è l'altezza massima del pannello in frazione dello schermo
-// (come nel CSS: 0.72 normale, 0.55 per luce e meteo)
+// (come nel CSS: 0.55, cioè il pannello aperto a metà)
 function mostraSopraAlPannello({ lat, lng }, altezzaMassima) {
   const contenitore = mappa.getContainer().getBoundingClientRect();
   let visibile; // area della mappa visibile, in coordinate del contenitore
   if (window.innerWidth >= 700) {
-    // su schermi larghi il pannello sta a sinistra (420px + margine)
-    visibile = { x1: Math.max(0, 436 - contenitore.left), x2: contenitore.width, y1: 0, y2: contenitore.height };
+    // su schermi larghi il pannello è una colonna a sinistra
+    const pannello = document.getElementById('sheet');
+    const bordoDestro = pannello.offsetLeft + pannello.offsetWidth + 16;
+    visibile = { x1: Math.max(0, bordoDestro - contenitore.left), x2: contenitore.width, y1: 0, y2: contenitore.height };
   } else {
     // il pannello può essere più basso del massimo se il contenuto è breve
     const altoPannello = Math.min(document.getElementById('sheet').offsetHeight, window.innerHeight * altezzaMassima);
@@ -417,6 +485,7 @@ function apriSpot(s) {
     onTogliVisita: (data) => ricarica(togliVisita(s.id, data)),
     onModifica: () => apriModuloSpot(s),
     onLuce: () => apriLuce(s),
+    onMappa: vista === 'elenco' ? () => mostraSullaMappa(s, () => livelloSpot.evidenzia(s.id), () => apriSpot(s)) : null,
     onElimina: () => {
       if (!window.confirm(t('spot.confermaElimina', { nome: s.nome }))) return;
       eliminaSpot(s.id);
@@ -430,7 +499,7 @@ function apriSpot(s) {
   });
   spotAperto = s.id;
   livelloSpot.evidenzia(s.id);
-  mostraSopraAlPannello(s, 0.72);
+  if (vista === 'mappa') mostraSopraAlPannello(s, 0.55);
 }
 
 // Nuovo spot: `bozza` ha la posizione ed eventuali campi precompilati (nome, specie)
@@ -464,8 +533,10 @@ function apriModuloSpot(bozza) {
     livelloSpot.nascondiAnteprima();
   });
   moduloSpot = modulo; // dopo apriPannello, che chiama l'onChiudi del pannello precedente
+  // il punto del nuovo spot va mostrato sulla mappa
+  if (vista === 'elenco') impostaVista('mappa');
   livelloSpot.mostraAnteprima(bozza);
-  mostraSopraAlPannello(bozza, 0.72);
+  mostraSopraAlPannello(bozza, 0.55);
 }
 
 // --- Legenda
@@ -482,6 +553,9 @@ document.getElementById('info').addEventListener('click', apriInfo);
 
 // --- Cambio di lingua
 alCambioLingua(() => {
+  // titoli dei pulsanti di zoom
+  document.querySelector('.leaflet-control-zoom-in')?.setAttribute('title', t('mappa.ingrandisci'));
+  document.querySelector('.leaflet-control-zoom-out')?.setAttribute('title', t('mappa.riduci'));
   if (ultimoMessaggio) mostraMessaggio(ultimoMessaggio.chiave, ultimoMessaggio.parametri, ultimoMessaggio.tipo);
   // Impostazioni e informazioni si ridisegnano nella nuova lingua; gli altri pannelli si chiudono
   if (pannelloAperto === 'impostazioni') apriImpostazioni();
@@ -532,4 +606,5 @@ async function centraSuDiMe() {
 }
 
 btnPosizione.addEventListener('click', centraSuDiMe);
+impostaVista(vista);
 centraSuDiMe();

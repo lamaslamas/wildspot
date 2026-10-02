@@ -10,6 +10,7 @@ import { creaIndicatore, htmlLuogoEbird, htmlHotspot, evidenziaIndicatore } from
 
 export function creaLivelloEbird(raggruppamento, onSeleziona) {
   let indicatori = [];
+  let perLuogo = new Map(); // locId -> funzione che seleziona l'indicatore
   let selezionato = null;
   let idSelezionato = null; // per ritrovare la selezione dopo un ricaricamento
 
@@ -22,6 +23,7 @@ export function creaLivelloEbird(raggruppamento, onSeleziona) {
     togliEvidenziazione();
     raggruppamento.removeLayers(indicatori);
     indicatori = [];
+    perLuogo = new Map();
 
     for (const luogo of luoghi) {
       const conAvvistamenti = visibili.avvistamenti && luogo.avvistamenti.length > 0;
@@ -43,6 +45,7 @@ export function creaLivelloEbird(raggruppamento, onSeleziona) {
         seleziona();
       });
       if (luogo.locId === daRiselezionare) setTimeout(seleziona); // dopo l'aggiunta alla mappa
+      perLuogo.set(luogo.locId, seleziona);
       indicatori.push(indicatore);
     }
     raggruppamento.addLayers(indicatori);
@@ -54,5 +57,5 @@ export function creaLivelloEbird(raggruppamento, onSeleziona) {
     idSelezionato = null;
   }
 
-  return { aggiorna, togliEvidenziazione };
+  return { aggiorna, togliEvidenziazione, seleziona: (locId) => perLuogo.get(locId)?.() };
 }
