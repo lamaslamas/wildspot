@@ -2,6 +2,8 @@
 // e i dati di iNaturalist ed eBird.
 
 import './style.css';
+import './pwa.js';
+import { creaBloccoInstalla } from './install-ui.js';
 import { creaMappa, mostraPosizione, mostraRaggio, CENTRO_PREDEFINITO } from './map.js';
 import { leggiPosizione } from './geolocation.js';
 import { creaSelettoreRaggio } from './radius.js';
@@ -32,6 +34,8 @@ import { creaSelettoreLingua } from './language-switch.js';
 // Testi dell'HTML nella lingua scelta e selettore di lingua nella presentazione
 traduciPagina();
 document.querySelector('[data-selettore-lingua]').append(creaSelettoreLingua());
+// Nella presentazione, sotto "Apri la mappa": invito a installare l'app
+document.getElementById('close-intro').after(creaBloccoInstalla({ compatto: true }));
 
 // --- Presentazione: schermata introduttiva mostrata alla prima apertura;
 // si riapre toccando il logo in alto a sinistra
@@ -221,10 +225,8 @@ async function caricaDati() {
     mostraMessaggio(eff.livelli.heatmap ? 'stato.soloHeatmap' : 'stato.nessunLivello');
     return;
   }
-  if (!navigator.onLine) {
-    mostraMessaggio('stato.offline', {}, 'errore');
-    return;
-  }
+  // Senza rete proviamo lo stesso: il service worker risponde con i dati salvati
+  const offline = !navigator.onLine;
   mostraMessaggio('stato.carico');
 
   const area = { centro: stato.centro, raggioKm: stato.raggioKm };
@@ -261,6 +263,8 @@ async function caricaDati() {
 
   if (chiaveRifiutata) {
     mostraMessaggio('stato.ebirdChiave', {}, 'errore');
+  } else if (erroreInat && offline) {
+    mostraMessaggio('stato.offline', {}, 'errore');
   } else if (erroreInat) {
     mostraMessaggio(erroreInat.status === 429 ? 'stato.troppeRichieste' : 'stato.erroreRete', {}, 'errore');
   } else if (erroreEbird) {
@@ -273,7 +277,8 @@ async function caricaDati() {
       totale: totaleInat + avvistamentiOk.length,
       periodo: t(`periodoStato.${filtri.giorni}`),
     };
-    if (!n) mostraMessaggio('stato.nessuna', parametri);
+    if (offline) mostraMessaggio('stato.offlineSalvati', parametri);
+    else if (!n) mostraMessaggio('stato.nessuna', parametri);
     else if (totaleInat > osservazioni.length) mostraMessaggio('stato.parziale', parametri);
     else mostraMessaggio(n === 1 ? 'stato.conteggio1' : 'stato.conteggio', parametri);
   }

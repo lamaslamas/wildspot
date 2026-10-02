@@ -17,6 +17,12 @@ Apri l'indirizzo mostrato nel terminale (di solito `http://localhost:5173/wildsp
 
 Per provarla sul telefono nella stessa rete Wi-Fi usa `npm run dev -- --host`. Attenzione: il browser concede il GPS solo in HTTPS o su `localhost`, quindi da un indirizzo `http://192.168…` la posizione non funzionerà; per i test sul telefono usa la versione pubblicata.
 
+## Installazione sul telefono (PWA)
+
+Apri l'app pubblicata in Chrome su Android e tocca **Installa l'app** (nella presentazione o nelle Impostazioni), oppure menu ⋮ → "Installa app". Su iPhone: Condividi → "Aggiungi alla schermata Home".
+
+Il service worker (generato da `vite-plugin-pwa`, configurato in `vite.config.js`) salva la struttura dell'app all'installazione e, man mano che la usi, tile delle mappe, risposte delle API e foto. Senza rete l'app si apre e mostra gli ultimi dati scaricati per le zone già viste; diario, luce e ora dorata funzionano sempre. Le icone stanno in `public/icons/` (generate dal simbolo del logo).
+
 ## Build
 
 ```bash

@@ -1858,3 +1858,20 @@ h3:first-child {
 .tile-heatmap {
   filter: saturate(1.5) contrast(1.25);
 }
+
+/* ---------- Installazione ---------- */
+.installa-compatto {
+  align-self: center;
+  max-width: 340px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.installa-compatto .nota {
+  font-size: 0.82rem;
+}
+
+.btn-installa {
+  border-color: var(--ocra-testo);
+  color: var(--ocra-testo);
+}

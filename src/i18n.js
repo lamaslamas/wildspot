@@ -37,7 +37,8 @@ const TESTI = {
     // Messaggi di stato
     'stato.cercoPosizione': 'Cerco la tua posizione…',
     'stato.carico': 'Carico le osservazioni…',
-    'stato.offline': 'Sei offline: osservazioni non disponibili',
+    'stato.offline': 'Sei offline e per questa zona non ci sono dati salvati. I tuoi spot e la luce funzionano comunque.',
+    'stato.offlineSalvati': 'Offline · {n} osservazioni salvate in precedenza',
     'stato.nessuna': 'Nessuna osservazione · {periodo}',
     'stato.conteggio1': '1 osservazione · {periodo}',
     'stato.conteggio': '{n} osservazioni · {periodo}',
@@ -219,6 +220,13 @@ const TESTI = {
     'legenda.gruppoSpiega': 'Tocca per ingrandire la zona e vederli separati.',
     'legenda.posizione': 'La tua posizione',
 
+    // Installazione
+    'installa.titolo': 'App sul telefono',
+    'installa.pulsante': "Installa l'app",
+    'installa.menu': "Per installarla: menu del browser (⋮) → \"Installa app\" o \"Aggiungi a schermata Home\". Funziona anche offline.",
+    'installa.ios': 'Su iPhone: tocca Condividi → "Aggiungi alla schermata Home".',
+    'installa.giaFatto': "L'app è installata: si apre dalla schermata Home e funziona anche offline.",
+
     // Heatmap
     'livello.heatmap': 'Heatmap',
     'legenda.heatmap': 'Heatmap delle osservazioni',
@@ -312,7 +320,8 @@ const TESTI = {
 
     'stato.cercoPosizione': 'Finding your location…',
     'stato.carico': 'Loading observations…',
-    'stato.offline': 'You are offline: observations unavailable',
+    'stato.offline': 'You are offline and there is no saved data for this area. Your spots and the light panel still work.',
+    'stato.offlineSalvati': 'Offline · {n} previously saved observations',
     'stato.nessuna': 'No observations · {periodo}',
     'stato.conteggio1': '1 observation · {periodo}',
     'stato.conteggio': '{n} observations · {periodo}',
@@ -482,6 +491,12 @@ const TESTI = {
     'legenda.gruppo': 'Group of nearby points',
     'legenda.gruppoSpiega': 'Tap to zoom in and see them separately.',
     'legenda.posizione': 'Your location',
+
+    'installa.titolo': 'App on your phone',
+    'installa.pulsante': 'Install the app',
+    'installa.menu': 'To install it: browser menu (⋮) → "Install app" or "Add to Home screen". It also works offline.',
+    'installa.ios': 'On iPhone: tap Share → "Add to Home Screen".',
+    'installa.giaFatto': 'The app is installed: open it from the Home screen; it also works offline.',
 
     'livello.heatmap': 'Heatmap',
     'legenda.heatmap': 'Observation heatmap',

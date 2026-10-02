@@ -8,6 +8,7 @@ import { t } from './i18n.js';
 import { creaSelettoreLingua } from './language-switch.js';
 import { verificaChiave } from './ebird.js';
 import { RAGGI_KM } from './radius.js';
+import { creaBloccoInstalla } from './install-ui.js';
 import { htmlOsservazione, iconaPiccola } from './markers.js';
 
 export function leggiImpostazioni() {
@@ -180,5 +181,7 @@ export function creaPannelloImpostazioni(onCambio) {
     el('p', { class: 'nota' }, t('imp.predefinitiNota')),
     el('h3', {}, t('lingua')),
     creaSelettoreLingua(),
+    el('h3', {}, t('installa.titolo')),
+    creaBloccoInstalla(),
   );
 }
