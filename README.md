@@ -55,7 +55,11 @@ src/sun.js                 calcoli sul sole con SunCalc (orari, posizione, fasi 
 src/sun-layer.js           punto scelto e direzione del sole sulla mappa
 src/light-panel.js         pannello luce e meteo con cursore orario
 src/weather.js             previsioni orarie da Open-Meteo
-src/observations-layer.js  osservazioni sulla mappa (con aree di incertezza)
+src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di incertezza)
+src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
+src/icons.js               icone SVG dei gruppi di animali e del binocolo
+src/legend.js              legenda dei simboli
+src/leaflet-global.js      espone Leaflet come `L` globale per il plugin di raggruppamento
 src/card.js                schede: osservazione iNaturalist e luogo eBird
 src/filters.js             filtri: livelli, periodo, gruppi, ricerca specie
 src/groups.js              gruppi di animali e colori
@@ -77,7 +81,8 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **eBird**: serve una chiave personale gratuita, da chiedere su <https://ebird.org/api/keygen> e da inserire nelle **Impostazioni** dell'app (icona a ingranaggio). La chiave viene salvata solo nel `localStorage` del dispositivo e inviata solo a eBird: **non va mai scritta nel codice né committata**. L'API di eBird accetta chiamate dal browser (CORS aperto), quindi non serve un proxy. eBird fornisce al massimo gli ultimi 30 giorni e un raggio di 50 km; gli avvistamenti sono raggruppati per luogo (un indicatore per hotspot o località, con l'elenco delle specie). eBird nasconde già le specie sensibili e l'app non aggira questo comportamento.
 - **Luce**: calcolata sul telefono con SunCalc, senza connessione. Ora blu = sole tra −6° e −4°, ora dorata = tra −4° e +6°. Gli orari sono mostrati nel fuso orario del telefono.
 - **Meteo**: Open-Meteo, nessuna chiave; copre circa gli ultimi tre mesi e i prossimi 15 giorni.
-- **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra come un anello tratteggiato con un'area di incertezza sfumata e non tenta mai di ricostruire il punto reale.
+- **Simboli sulla mappa**: iNaturalist = badge rotondo con l'icona del gruppo; eBird = etichetta verde con binocolo e numero di specie (stella se ci sono specie notevoli); hotspot senza avvistamenti recenti = etichetta chiara. I punti vicini si raggruppano in bolle con il numero (plugin Leaflet.markercluster). Il pulsante **Legenda** sulla mappa spiega tutti i simboli.
+- **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni
 

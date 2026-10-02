@@ -197,6 +197,21 @@ const TESTI = {
     'meteo.temporale': 'Temporale',
     'meteo.sconosciuto': 'Non disponibile',
     'info.fonteMeteo': 'Previsioni meteo da {link} (CC BY 4.0)',
+
+    // Legenda
+    legenda: 'Legenda',
+    'legenda.oscurata': 'Posizione oscurata',
+    'legenda.oscurataSpiega': "Specie protetta o scelta dell'osservatore: il punto non è quello reale. Tocca per vedere l'area, spesso ampia decine di km, in cui si trova.",
+    'legenda.ebird': 'Luogo con avvistamenti eBird',
+    'legenda.ebirdSpiega': 'Il numero indica quante specie sono state viste lì di recente. Tocca per l\'elenco.',
+    'legenda.notevole': 'Con specie notevoli',
+    'legenda.notevoleSpiega': 'Tra gli avvistamenti ci sono specie rare per la zona.',
+    'legenda.hotspot': 'Hotspot eBird',
+    'legenda.hotspotSpiega': 'Luogo noto per il birdwatching, senza avvistamenti recenti con i filtri attuali.',
+    'legenda.altro': 'Altro',
+    'legenda.gruppo': 'Gruppo di punti vicini',
+    'legenda.gruppoSpiega': 'Tocca per ingrandire la zona e vederli separati.',
+    'legenda.posizione': 'La tua posizione',
   },
 
   en: {
@@ -374,6 +389,20 @@ const TESTI = {
     'meteo.temporale': 'Thunderstorm',
     'meteo.sconosciuto': 'Not available',
     'info.fonteMeteo': 'Weather forecast from {link} (CC BY 4.0)',
+
+    legenda: 'Legend',
+    'legenda.oscurata': 'Obscured location',
+    'legenda.oscurataSpiega': "Protected species or the observer's choice: this is not the real spot. Tap to see the area, often tens of km wide, where it lies.",
+    'legenda.ebird': 'Place with eBird sightings',
+    'legenda.ebirdSpiega': 'The number shows how many species were seen there recently. Tap for the list.',
+    'legenda.notevole': 'With notable species',
+    'legenda.notevoleSpiega': 'The sightings include species that are rare for the area.',
+    'legenda.hotspot': 'eBird hotspot',
+    'legenda.hotspotSpiega': 'A known birding spot, with no recent sightings under the current filters.',
+    'legenda.altro': 'Other',
+    'legenda.gruppo': 'Group of nearby points',
+    'legenda.gruppoSpiega': 'Tap to zoom in and see them separately.',
+    'legenda.posizione': 'Your location',
   },
 };
 

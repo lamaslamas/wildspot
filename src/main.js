@@ -11,10 +11,12 @@ import { cercaOsservazioni } from './inaturalist.js';
 import { cercaAvvistamenti, cercaHotspot, raggruppaPerLuogo } from './ebird.js';
 import { creaLivelloOsservazioni } from './observations-layer.js';
 import { creaLivelloEbird } from './ebird-layer.js';
+import { creaRaggruppamento } from './markers.js';
 import { creaScheda, creaSchedaLuogo } from './card.js';
 import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri } from './filters.js';
 import { leggiImpostazioni, creaPannelloImpostazioni } from './settings.js';
 import { creaInfo } from './info.js';
+import { creaLegenda } from './legend.js';
 import { creaPannelloLuce } from './light-panel.js';
 import { creaLivelloSole } from './sun-layer.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
@@ -80,9 +82,10 @@ mappa.attributionControl.addAttribution('<a href="https://www.inaturalist.org">i
 const ATTRIBUZIONE_EBIRD = '<a href="https://ebird.org">eBird</a>';
 mostraRaggio(stato.centro, stato.raggioKm);
 
-// I luoghi eBird stanno sotto alle osservazioni iNaturalist (creati prima)
-const livelloEbird = creaLivelloEbird(mappa, apriSchedaLuogo);
-const livelloInat = creaLivelloOsservazioni(mappa, apriScheda);
+// iNaturalist ed eBird condividono il raggruppamento dei punti vicini
+const raggruppamento = creaRaggruppamento(mappa);
+const livelloEbird = creaLivelloEbird(raggruppamento, apriSchedaLuogo);
+const livelloInat = creaLivelloOsservazioni(mappa, raggruppamento, apriScheda);
 const livelloSole = creaLivelloSole(mappa);
 
 // Toccando un punto vuoto della mappa: con il pannello luce aperto si sposta
@@ -100,12 +103,17 @@ mappa.on('click', (e) => {
 let ignoraProssimoSpostamento = false;
 
 // Quando l'utente sposta la mappa, la ricerca segue il nuovo centro.
-// Ignoriamo i piccoli spostamenti per non fare richieste inutili.
+// Non ricarichiamo se la zona visibile sta tutta dentro il cerchio di ricerca
+// (per esempio dopo aver ingrandito una bolla: i dati ci sono già) né per
+// piccoli spostamenti, per non fare richieste inutili.
 mappa.on('moveend', () => {
   if (ignoraProssimoSpostamento) {
     ignoraProssimoSpostamento = false;
     return;
   }
+  const b = mappa.getBounds();
+  const angoli = [b.getNorthWest(), b.getNorthEast(), b.getSouthWest(), b.getSouthEast()];
+  if (angoli.every((a) => distanzaKm(a, stato.centro) <= stato.raggioKm)) return;
   const c = mappa.getCenter();
   const nuovoCentro = { lat: c.lat, lng: c.lng };
   if (distanzaKm(nuovoCentro, stato.centro) < stato.raggioKm * 0.2) return;
@@ -236,10 +244,12 @@ function apriScheda(o) {
     },
   });
   apriPannello('scheda', o.nomeComune || o.nomeSci, scheda, livelloInat.togliEvidenziazione);
+  mostraSopraAlPannello(o, 0.72);
 }
 
 function apriSchedaLuogo(luogo, opzioni) {
   apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, { ...opzioni, onLuce: apriLuce }), livelloEbird.togliEvidenziazione);
+  mostraSopraAlPannello(luogo, 0.72);
 }
 
 // --- Luce e meteo
@@ -264,18 +274,21 @@ function apriLuce(punto) {
       'sheet-basso',
     );
   }
-  mostraSopraAlPannello(punto);
+  mostraSopraAlPannello(punto, 0.55);
 }
 
-// Sposta la mappa in modo che il punto stia al centro della parte non coperta dal pannello
-function mostraSopraAlPannello({ lat, lng }) {
+// Sposta la mappa in modo che il punto stia al centro della parte non coperta dal pannello.
+// `altezzaMassima` è l'altezza massima del pannello in frazione dello schermo
+// (come nel CSS: 0.72 normale, 0.55 per luce e meteo)
+function mostraSopraAlPannello({ lat, lng }, altezzaMassima) {
   const contenitore = mappa.getContainer().getBoundingClientRect();
   let visibile; // area della mappa visibile, in coordinate del contenitore
   if (window.innerWidth >= 700) {
     // su schermi larghi il pannello sta a sinistra (420px + margine)
     visibile = { x1: Math.max(0, 436 - contenitore.left), x2: contenitore.width, y1: 0, y2: contenitore.height };
   } else {
-    const altoPannello = window.innerHeight * 0.55; // come .sheet-basso
+    // il pannello può essere più basso del massimo se il contenuto è breve
+    const altoPannello = Math.min(document.getElementById('sheet').offsetHeight, window.innerHeight * altezzaMassima);
     const fondo = Math.min(contenitore.height, window.innerHeight - altoPannello - contenitore.top);
     visibile = { x1: 0, x2: contenitore.width, y1: 0, y2: fondo };
   }
@@ -338,6 +351,12 @@ function apriImpostazioni() {
 }
 document.getElementById('settings').addEventListener('click', apriImpostazioni);
 
+// --- Legenda
+function apriLegenda() {
+  apriPannello('legenda', t('legenda'), creaLegenda({ ebirdDisponibile: Boolean(impostazioni.chiaveEbird) }));
+}
+document.getElementById('legend').addEventListener('click', apriLegenda);
+
 // --- Informazioni
 function apriInfo() {
   apriPannello('info', t('informazioni'), creaInfo());
@@ -350,6 +369,7 @@ alCambioLingua(() => {
   // Impostazioni e informazioni si ridisegnano nella nuova lingua; gli altri pannelli si chiudono
   if (pannelloAperto === 'impostazioni') apriImpostazioni();
   else if (pannelloAperto === 'info') apriInfo();
+  else if (pannelloAperto === 'legenda') apriLegenda();
   else if (pannelloAperto === 'luce' && pannelloLuce) {
     // ricreiamo il pannello luce nella nuova lingua, sullo stesso punto
     const punto = pannelloLuce.punto();

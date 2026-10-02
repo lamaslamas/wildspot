@@ -1,80 +1,56 @@
-// Livello della mappa con le osservazioni (per ora da iNaturalist).
+// Livello della mappa con le osservazioni di iNaturalist.
 //
-// - Osservazione con posizione precisa: pallino pieno del colore del gruppo.
-// - Osservazione con posizione oscurata: cerchio sfumato grande quanto l'area di
-//   incertezza dichiarata dall'API, più un anello tratteggiato al centro su cui
-//   toccare. Il centro NON è la posizione reale: è solo il punto pubblico casuale.
+// - Osservazione con posizione precisa: badge rotondo con l'icona del gruppo.
+// - Osservazione con posizione oscurata: badge chiaro con bordo tratteggiato.
+//   Toccandola compare l'area di incertezza dichiarata dall'API (spesso decine
+//   di km): il centro NON è la posizione reale, è solo il punto pubblico casuale.
+//   Le aree non sono disegnate tutte insieme perché, sovrapposte, coprirebbero
+//   la mappa con una velatura che confonde.
+//
+// Gli indicatori finiscono nel raggruppamento condiviso con eBird.
 
-import L from 'leaflet';
+import L from './leaflet-global.js';
 import { gruppo } from './groups.js';
+import { creaIndicatore, htmlOsservazione, evidenziaIndicatore } from './markers.js';
 
-export function creaLivelloOsservazioni(mappa, onSeleziona) {
-  // Pannello sotto ai marcatori per le aree di incertezza
+export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
+  // Pannello sotto agli indicatori per le aree di incertezza
   mappa.createPane('incertezza').style.zIndex = 350;
 
-  // Il renderer canvas con "tolerance" allarga l'area toccabile dei pallini:
-  // sul telefono si centrano anche con il pollice
-  const renderer = L.canvas({ tolerance: 10 });
-
-  const aree = L.layerGroup().addTo(mappa);
-  const marcatori = L.layerGroup().addTo(mappa);
-  let evidenziazione = null; // anello attorno all'osservazione selezionata
+  let indicatori = [];
+  let selezionato = null;
+  let idSelezionato = null; // per ritrovare la selezione dopo un ricaricamento
+  let areaEvidenziata = null;
 
   function aggiorna(osservazioni) {
-    aree.clearLayers();
-    marcatori.clearLayers();
+    const daRiselezionare = idSelezionato;
     togliEvidenziazione();
+    raggruppamento.removeLayers(indicatori);
 
-    for (const o of osservazioni) {
-      const { colore } = gruppo(o.gruppo);
+    indicatori = osservazioni.map((o) => {
       const punto = [o.lat, o.lng];
-      let marcatore;
-
-      if (o.oscurata) {
-        L.circle(punto, {
-          pane: 'incertezza',
-          radius: o.incertezzaM,
-          stroke: false,
-          fillColor: colore,
-          fillOpacity: 0.06,
-          interactive: false,
-        }).addTo(aree);
-        marcatore = L.circleMarker(punto, {
-          renderer,
-          radius: 7,
-          color: colore,
-          weight: 3,
-          dashArray: '3 3',
-          fillColor: '#fff',
-          fillOpacity: 0.9,
-        });
-      } else {
-        marcatore = L.circleMarker(punto, {
-          renderer,
-          radius: 7,
-          color: '#fff',
-          weight: 2,
-          fillColor: colore,
-          fillOpacity: 0.95,
-        });
-      }
-
-      marcatore.on('click', (e) => {
-        L.DomEvent.stopPropagation(e); // non far arrivare il tocco alla mappa
-        onSeleziona(o); // prima la scheda: aprendola si toglie l'evidenziazione precedente
-        evidenzia(o);
+      const indicatore = creaIndicatore(punto, htmlOsservazione(o.gruppo, o.oscurata), {
+        titolo: o.nomeComune || o.nomeSci,
+        sopra: true,
       });
-      marcatore.addTo(marcatori);
-    }
+      indicatore.on('click', () => {
+        onSeleziona(o); // prima la scheda: aprendola si toglie l'evidenziazione precedente
+        evidenzia(indicatore, o);
+      });
+      if (o.id === daRiselezionare) setTimeout(() => evidenzia(indicatore, o)); // dopo l'aggiunta alla mappa
+      return indicatore;
+    });
+    raggruppamento.addLayers(indicatori);
   }
 
-  function evidenzia(o) {
+  function evidenzia(indicatore, o) {
     togliEvidenziazione();
-    const punto = [o.lat, o.lng];
-    evidenziazione = L.layerGroup().addTo(mappa);
+    selezionato = indicatore;
+    idSelezionato = o.id;
+    evidenziaIndicatore(indicatore, true);
     if (o.oscurata) {
       // Mostriamo il bordo dell'area entro cui si trova davvero l'osservazione
-      L.circle(punto, {
+      areaEvidenziata = L.circle([o.lat, o.lng], {
         pane: 'incertezza',
         radius: o.incertezzaM,
         color: gruppo(o.gruppo).colore,
@@ -82,20 +58,16 @@ export function creaLivelloOsservazioni(mappa, onSeleziona) {
         dashArray: '6 6',
         fillOpacity: 0.12,
         interactive: false,
-      }).addTo(evidenziazione);
+      }).addTo(mappa);
     }
-    L.circleMarker(punto, {
-      radius: 13,
-      color: '#111',
-      weight: 3,
-      fill: false,
-      interactive: false,
-    }).addTo(evidenziazione);
   }
 
   function togliEvidenziazione() {
-    if (evidenziazione) evidenziazione.remove();
-    evidenziazione = null;
+    evidenziaIndicatore(selezionato, false);
+    selezionato = null;
+    idSelezionato = null;
+    areaEvidenziata?.remove();
+    areaEvidenziata = null;
   }
 
   return { aggiorna, togliEvidenziazione };
