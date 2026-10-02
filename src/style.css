@@ -1977,3 +1977,26 @@ h3:first-child {
 [data-sfondo='satellitare'] .leaflet-control-scale-line {
   background: rgb(255 255 255 / 0.85);
 }
+
+/* ---------- Luna ---------- */
+.luna {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #eef0f6;
+}
+
+.luna-disco svg {
+  display: block;
+}
+
+.luna-testo {
+  display: grid;
+}
+
+.luna-testo small {
+  color: var(--testo-secondario);
+}

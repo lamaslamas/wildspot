@@ -4,7 +4,7 @@
 
 import { el } from './dom.js';
 import { t, locale } from './i18n.js';
-import { orariDelGiorno, posizioneSole, faseLuce, gradienteGiornata, puntoCardinale } from './sun.js';
+import { orariDelGiorno, posizioneSole, faseLuce, gradienteGiornata, puntoCardinale, lunaDelGiorno, svgLuna } from './sun.js';
 import { meteoOrario, descriviCodice, dataIso } from './weather.js';
 
 const MINUTI_GIORNO = 24 * 60;
@@ -88,6 +88,7 @@ export function creaPannelloLuce({ punto, onSole, onSalvaSpot }) {
 
   // --- Orari del giorno
   const griglia = el('dl', { class: 'orari' });
+  const elLuna = el('div', { class: 'luna' });
 
   // --- Meteo
   const meteo = el('div', { class: 'meteo' });
@@ -159,6 +160,25 @@ export function creaPannelloLuce({ punto, onSole, onSalvaSpot }) {
       ...riga('luce.dorataSera', intervallo(o.dorataSera), 'fase-dorata'),
       ...riga('luce.bluMattina', intervallo(o.bluMattina), 'fase-blu'),
       ...riga('luce.bluSera', intervallo(o.bluSera), 'fase-blu'),
+    );
+
+    // Luna
+    const luna = lunaDelGiorno(stato.data, lat, lng);
+    const disco = el('span', { class: 'luna-disco' });
+    disco.innerHTML = svgLuna(luna.valoreFase, 44); // SVG generato da noi
+    const orariLuna = luna.sempreSopra
+      ? t('luna.sempreSopra')
+      : luna.sempreSotto
+        ? t('luna.sempreSotto')
+        : t('luna.orari', { sorge: hhmm(luna.sorge), tramonta: hhmm(luna.tramonta) });
+    elLuna.replaceChildren(
+      disco,
+      el(
+        'span',
+        { class: 'luna-testo' },
+        el('b', {}, `${t(`luna.${luna.fase}`)} · ${luna.illuminata}%`),
+        el('small', {}, orariLuna),
+      ),
     );
   }
 
@@ -239,6 +259,7 @@ export function creaPannelloLuce({ punto, onSole, onSalvaSpot }) {
     cursore,
     tacche,
     griglia,
+    elLuna,
     el('h3', {}, t('meteo.titolo')),
     meteo,
     el(

@@ -6,7 +6,7 @@
 // SunCalc conosce già -6° (dawn/dusk) e +6° (goldenHourEnd/goldenHour);
 // aggiungiamo il passaggio a -4°.
 
-import { getTimes, getPosition, addTime } from 'suncalc';
+import { getTimes, getPosition, addTime, getMoonIllumination, getMoonTimes } from 'suncalc';
 
 addTime(-4, 'bluFineMattina', 'bluInizioSera');
 
@@ -85,4 +85,50 @@ export function gradienteGiornata(data, lat, lng) {
 const DIREZIONI = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 export function puntoCardinale(azimut) {
   return DIREZIONI[Math.round(azimut / 45) % 8];
+}
+
+// --- Luna
+
+// Nomi delle fasi (chiavi di traduzione) in base alla fase SunCalc (0 → 1)
+function nomeFase(fase) {
+  if (fase < 0.03 || fase > 0.97) return 'nuova';
+  if (fase < 0.22) return 'crescente';
+  if (fase < 0.28) return 'primoQuarto';
+  if (fase < 0.47) return 'gibbosaCrescente';
+  if (fase < 0.53) return 'piena';
+  if (fase < 0.72) return 'gibbosaCalante';
+  if (fase < 0.78) return 'ultimoQuarto';
+  return 'calante';
+}
+
+/**
+ * Luna nel giorno scelto: fase, percentuale illuminata, sorgere e tramonto.
+ * Utile per notturni e paesaggi (luna piena = notti chiare, luna nuova = cielo buio).
+ */
+export function lunaDelGiorno(data, lat, lng) {
+  const mezzogiorno = new Date(data);
+  mezzogiorno.setHours(12, 0, 0, 0);
+  const illuminazione = getMoonIllumination(mezzogiorno);
+  const orari = getMoonTimes(mezzogiorno, lat, lng, -mezzogiorno.getTimezoneOffset());
+  return {
+    fase: nomeFase(illuminazione.phase),
+    valoreFase: illuminazione.phase,
+    illuminata: Math.round(illuminazione.fraction * 100),
+    sorge: orari.rise || null,
+    tramonta: orari.set || null,
+    sempreSopra: Boolean(orari.alwaysUp),
+    sempreSotto: Boolean(orari.alwaysDown),
+  };
+}
+
+// Disegno SVG della fase lunare: disco scuro con la parte illuminata
+export function svgLuna(valoreFase, lato = 40) {
+  const r = 18;
+  const k = Math.cos(valoreFase * 2 * Math.PI); // 1 nuova, -1 piena
+  const crescente = valoreFase < 0.5;
+  // bordo esterno illuminato (semicerchio) + terminatore (ellisse con raggio x = |k|·r)
+  const sweepEsterno = crescente ? 1 : 0;
+  const sweepTerminatore = (k > 0) === crescente ? 0 : 1;
+  const d = `M20 2 A${r} ${r} 0 0 ${sweepEsterno} 20 38 A${Math.abs(k) * r} ${r} 0 0 ${sweepTerminatore} 20 2Z`;
+  return `<svg viewBox="0 0 40 40" width="${lato}" height="${lato}" aria-hidden="true"><circle cx="20" cy="20" r="${r}" fill="#2b3245"/><path d="${d}" fill="#f4e9c8"/></svg>`;
 }

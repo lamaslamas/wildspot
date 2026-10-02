@@ -220,6 +220,19 @@ const TESTI = {
     'legenda.gruppoSpiega': 'Tocca per ingrandire la zona e vederli separati.',
     'legenda.posizione': 'La tua posizione',
 
+    // Luna
+    'luna.nuova': 'Luna nuova',
+    'luna.crescente': 'Luna crescente',
+    'luna.primoQuarto': 'Primo quarto',
+    'luna.gibbosaCrescente': 'Gibbosa crescente',
+    'luna.piena': 'Luna piena',
+    'luna.gibbosaCalante': 'Gibbosa calante',
+    'luna.ultimoQuarto': 'Ultimo quarto',
+    'luna.calante': 'Luna calante',
+    'luna.orari': 'Sorge {sorge} · tramonta {tramonta}',
+    'luna.sempreSopra': "Sopra l'orizzonte tutto il giorno",
+    'luna.sempreSotto': "Sotto l'orizzonte tutto il giorno",
+
     // Sfondo e aree protette
     'sfondo.pulsante': 'Sfondo',
     'sfondo.titolo': 'Sfondo della mappa',
@@ -511,6 +524,18 @@ const TESTI = {
     'legenda.gruppo': 'Group of nearby points',
     'legenda.gruppoSpiega': 'Tap to zoom in and see them separately.',
     'legenda.posizione': 'Your location',
+
+    'luna.nuova': 'New moon',
+    'luna.crescente': 'Waxing crescent',
+    'luna.primoQuarto': 'First quarter',
+    'luna.gibbosaCrescente': 'Waxing gibbous',
+    'luna.piena': 'Full moon',
+    'luna.gibbosaCalante': 'Waning gibbous',
+    'luna.ultimoQuarto': 'Last quarter',
+    'luna.calante': 'Waning crescent',
+    'luna.orari': 'Rises {sorge} · sets {tramonta}',
+    'luna.sempreSopra': 'Above the horizon all day',
+    'luna.sempreSotto': 'Below the horizon all day',
 
     'sfondo.pulsante': 'Map',
     'sfondo.titolo': 'Base map',
