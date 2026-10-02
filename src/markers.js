@@ -20,11 +20,29 @@ export function htmlOsservazione(idGruppo, oscurata = false) {
 }
 
 export function htmlLuogoEbird(numeroSpecie, notevole = false) {
-  return `<span class="mk mk-ebird${notevole ? ' mk-notevole' : ''}">${ICONA_BINOCOLO}<b>${notevole ? '★ ' : ''}${numeroSpecie}</b></span>`;
+  const testo = numeroSpecie === null ? '' : `<b>${notevole ? '★ ' : ''}${numeroSpecie}</b>`;
+  return `<span class="mk mk-ebird${notevole ? ' mk-notevole' : ''}">${ICONA_BINOCOLO}${testo}</span>`;
 }
 
 export function htmlHotspot() {
   return `<span class="mk mk-hotspot">${ICONA_BINOCOLO}</span>`;
+}
+
+// Simbolo di un livello della mappa (per i filtri)
+export function htmlLivello(id) {
+  if (id === 'ebirdAvvistamenti') return htmlLuogoEbird(null);
+  if (id === 'ebirdHotspot') return htmlHotspot();
+  // iNaturalist mostra tutti i gruppi: badge rotondo con i loro colori
+  return '<span class="mk mk-inat mk-multi"></span>';
+}
+
+// Versione piccola di un indicatore, da mettere dentro pulsanti e testi.
+// Accetta solo HTML generato in questo modulo.
+export function iconaPiccola(html) {
+  const nodo = document.createElement('span');
+  nodo.className = 'icona-mini';
+  nodo.innerHTML = html;
+  return nodo;
 }
 
 // Indicatore Leaflet con l'HTML dato. L'involucro ha dimensione zero e il

@@ -788,35 +788,53 @@ h3:first-child {
   cursor: pointer;
 }
 
-/* ---------- Livelli ---------- */
-.simbolo-livello {
+/* ---------- Icone piccole (indicatori della mappa in miniatura) ---------- */
+.icona-mini {
+  display: inline-flex;
   flex: none;
-  width: 16px;
-  height: 16px;
   margin-right: 8px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px #fff;
 }
 
-/* Riproducono la forma degli indicatori: rotondi per iNaturalist, rettangolari per eBird */
-.simbolo-inat {
-  /* iNaturalist mostra tutti i gruppi: un badge con i loro colori */
+.icona-mini .mk {
+  position: static;
+  transform: none;
+  box-shadow: none;
+  cursor: inherit;
+}
+
+.icona-mini .mk-inat {
+  width: 24px;
+  height: 24px;
+}
+
+.icona-mini .mk-inat svg {
+  width: 14px;
+  height: 14px;
+}
+
+.icona-mini .mk-ebird {
+  height: 22px;
+  padding: 0 6px;
+}
+
+.icona-mini .mk-ebird svg {
+  width: 14px;
+  height: 14px;
+}
+
+.icona-mini .mk-hotspot {
+  width: 24px;
+  height: 20px;
+}
+
+.icona-mini .mk-hotspot svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* iNaturalist mostra tutti i gruppi: badge con i loro colori */
+.mk-inat.mk-multi {
   background: conic-gradient(#d6336c 0 25%, #8a4b1f 0 50%, #d98e04 0 75%, #0b7d77 0);
-}
-
-.simbolo-ebirdAvvistamenti {
-  width: 20px;
-  height: 14px;
-  border-radius: 4px;
-  background: var(--verde);
-}
-
-.simbolo-ebirdHotspot {
-  width: 18px;
-  height: 14px;
-  border-radius: 4px;
-  background: var(--crema);
-  box-shadow: inset 0 0 0 2px var(--verde), 0 0 0 2px #fff;
 }
 
 /* ---------- Impostazioni ---------- */
@@ -1382,4 +1400,34 @@ h3:first-child {
   color: var(--testo-secondario);
   font-size: 0.85rem;
   line-height: 1.35;
+}
+
+/* Barra in cima ai filtri con il pulsante "Azzera filtri" */
+.barra-azzera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 10px;
+  background: var(--ocra-tenue);
+  color: var(--ocra-testo);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.barra-azzera[hidden] {
+  display: none;
+}
+
+.barra-azzera .btn {
+  min-height: 40px;
+  border-color: var(--ocra-testo);
+  color: var(--ocra-testo);
+}
+
+/* Senza la barra "Azzera", il primo titolo torna attaccato al bordo del pannello */
+.barra-azzera[hidden] + h3 {
+  margin-top: 4px;
 }

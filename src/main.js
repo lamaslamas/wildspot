@@ -322,7 +322,7 @@ function apriFiltri() {
       aggiornaBadge();
       caricaConCalma();
     },
-    { ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriImpostazioni: apriImpostazioni },
+    { ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriImpostazioni: apriImpostazioni, impostazioni },
   );
   apriPannello('filtri', t('filtri'), pannello);
 }

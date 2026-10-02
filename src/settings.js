@@ -8,6 +8,7 @@ import { t } from './i18n.js';
 import { creaSelettoreLingua } from './language-switch.js';
 import { verificaChiave } from './ebird.js';
 import { RAGGI_KM } from './radius.js';
+import { htmlOsservazione, iconaPiccola } from './markers.js';
 
 export function leggiImpostazioni() {
   const s = leggi('impostazioni', {});
@@ -149,7 +150,7 @@ export function creaPannelloImpostazioni(onCambio) {
               if (nuovi.length) cambia({ gruppiPredefiniti: nuovi }, 'gruppi');
             },
           },
-          el('span', { class: 'pallino', style: `background:${g.colore}` }),
+          iconaPiccola(htmlOsservazione(g.id)),
           t(`gruppo.${g.id}`),
         );
       }),

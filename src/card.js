@@ -3,6 +3,7 @@
 import { el } from './dom.js';
 import { gruppo } from './groups.js';
 import { t, locale } from './i18n.js';
+import { htmlOsservazione, iconaPiccola } from './markers.js';
 
 function dataLeggibile(o) {
   const opzioni = { day: 'numeric', month: 'long', year: 'numeric' };
@@ -48,7 +49,7 @@ export function creaScheda(o, { onSoloSpecie, onLuce } = {}) {
       'dl',
       { class: 'scheda-dati' },
       el('dt', {}, t('scheda.gruppo')),
-      el('dd', {}, el('span', { class: 'pallino', style: `background:${g.colore}` }), g.nome),
+      el('dd', {}, iconaPiccola(htmlOsservazione(o.gruppo, o.oscurata)), g.nome),
       el('dt', {}, t('scheda.data')),
       el('dd', {}, dataLeggibile(o)),
       o.numero && el('dt', {}, t('scheda.individui')),

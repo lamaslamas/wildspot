@@ -5,6 +5,7 @@ import { GRUPPI } from './groups.js';
 import { suggerisciTaxa } from './inaturalist.js';
 import { leggi, scrivi } from './storage.js';
 import { t } from './i18n.js';
+import { htmlOsservazione, htmlLivello, iconaPiccola } from './markers.js';
 
 // Periodo in giorni; 0 significa "sempre" (nessun limite di data)
 export const PERIODI = [7, 30, 365, 0];
@@ -31,6 +32,16 @@ export function salvaFiltri(filtri) {
   scrivi('filtri', { giorni: filtri.giorni, livelli: filtri.livelli });
 }
 
+// Filtri predefiniti: quelli a cui riporta il pulsante "Azzera"
+export function filtriPredefiniti(impostazioni) {
+  return {
+    giorni: PERIODO_PREDEFINITO,
+    gruppi: [...impostazioni.gruppiPredefiniti],
+    taxon: null,
+    livelli: Object.fromEntries(LIVELLI.map((l) => [l, true])),
+  };
+}
+
 // Quanti filtri sono diversi da quelli predefiniti (per il badge)
 export function contaFiltriAttivi(filtri, impostazioni) {
   let n = 0;
@@ -45,14 +56,23 @@ export function contaFiltriAttivi(filtri, impostazioni) {
 /**
  * Costruisce il contenuto del pannello filtri.
  * Ogni modifica viene applicata subito chiamando `onCambio(filtri)`.
- * @param {{ebirdDisponibile: boolean, onApriImpostazioni: () => void}} opzioni
+ * @param {{ebirdDisponibile: boolean, onApriImpostazioni: () => void, impostazioni: object}} opzioni
  */
-export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriImpostazioni }) {
+export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriImpostazioni, impostazioni }) {
   function cambia(modifiche) {
     Object.assign(filtri, modifiche);
     onCambio(filtri);
     ridisegna();
   }
+
+  // --- Azzera: riporta tutti i filtri ai valori predefiniti
+  const elAttivi = el('span', {});
+  const barraAzzera = el(
+    'div',
+    { class: 'barra-azzera' },
+    elAttivi,
+    el('button', { type: 'button', class: 'btn', onclick: () => cambia(filtriPredefiniti(impostazioni)) }, t('filtri.azzera')),
+  );
 
   // --- Livelli
   const livelli = el('div', { class: 'chips' });
@@ -128,6 +148,10 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
   campo.addEventListener('input', () => cercaSuggerimenti(campo.value.trim()));
 
   function ridisegna() {
+    const attivi = contaFiltriAttivi(filtri, impostazioni);
+    barraAzzera.hidden = attivi === 0;
+    elAttivi.textContent = t(attivi === 1 ? 'filtri.attivi1' : 'filtri.attivi', { n: attivi });
+
     livelli.replaceChildren(
       ...LIVELLI.map((id) => {
         const richiedeEbird = id !== 'inat';
@@ -141,7 +165,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
             disabled: richiedeEbird && !ebirdDisponibile,
             onclick: () => cambia({ livelli: { ...filtri.livelli, [id]: !filtri.livelli[id] } }),
           },
-          el('span', { class: `simbolo-livello simbolo-${id}` }),
+          iconaPiccola(htmlLivello(id)),
           t(`livello.${id}`),
         );
       }),
@@ -184,7 +208,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
               if (nuovi.length) cambia({ gruppi: nuovi }); // almeno un gruppo resta attivo
             },
           },
-          el('span', { class: 'pallino', style: `background:${g.colore}` }),
+          iconaPiccola(htmlOsservazione(g.id)),
           t(`gruppo.${g.id}`),
         );
       }),
@@ -207,6 +231,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
   return el(
     'div',
     { class: 'filtri' },
+    barraAzzera,
     el('h3', {}, t('filtri.livelli')),
     livelli,
     avvisoEbird,
