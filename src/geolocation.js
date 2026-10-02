@@ -1,16 +1,23 @@
 // Lettura della posizione tramite il GPS del browser.
 // Nota: funziona solo in HTTPS (GitHub Pages) o su localhost.
+// In caso di problemi l'errore ha una proprietà `chiave` da tradurre con t().
 
-const MESSAGGI_ERRORE = {
-  1: 'Permesso di posizione negato. Abilitalo nelle impostazioni del browser.',
-  2: 'Posizione non disponibile. Prova all\'aperto o attiva il GPS.',
-  3: 'Il GPS non ha risposto in tempo. Riprova.',
+const CHIAVI_ERRORE = {
+  1: 'gps.negato',
+  2: 'gps.nonDisponibile',
+  3: 'gps.timeout',
 };
+
+function errore(chiave) {
+  const e = new Error(chiave);
+  e.chiave = chiave;
+  return e;
+}
 
 export function leggiPosizione() {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
-      reject(new Error('Questo browser non supporta la geolocalizzazione.'));
+      reject(errore('gps.nonSupportato'));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -20,7 +27,7 @@ export function leggiPosizione() {
           lng: pos.coords.longitude,
           precisione: pos.coords.accuracy, // in metri
         }),
-      (err) => reject(new Error(MESSAGGI_ERRORE[err.code] || 'Errore di geolocalizzazione.')),
+      (err) => reject(errore(CHIAVI_ERRORE[err.code] || 'gps.errore')),
       {
         enableHighAccuracy: true,
         timeout: 15000,

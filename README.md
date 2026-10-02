@@ -1,6 +1,6 @@
 # WildSpot
 
-Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA.
+Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA. Disponibile in italiano e in inglese.
 
 > Stato: **fase 2** — mappa, posizione GPS, raggio, osservazioni iNaturalist con filtri e schede.
 
@@ -42,6 +42,8 @@ Se rinomini il repository, aggiorna `base` in `vite.config.js`.
 ```
 index.html                 pagina principale
 src/main.js                avvio dell'app, stato e collegamenti tra i moduli
+src/i18n.js                traduzioni italiano/inglese
+src/language-switch.js     selettore della lingua
 src/map.js                 mappa Leaflet, posizione e cerchio del raggio
 src/geolocation.js         lettura del GPS
 src/radius.js              selettore del raggio
@@ -57,6 +59,10 @@ src/dom.js                 utilità (creazione elementi, debounce, distanze)
 src/storage.js             salvataggio su localStorage
 src/style.css              stile mobile first
 ```
+
+## Lingue
+
+All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti inglese); la scelta si cambia dal selettore IT/EN nella presentazione o nel pannello informazioni e viene ricordata. Tutti i testi stanno in `src/i18n.js`: per aggiungerne uno inserisci la stessa chiave in entrambe le lingue. Nell'HTML si usano gli attributi `data-i18n` (testo) e `data-i18n-aria` (etichetta per i lettori di schermo).
 
 ## Note sui dati
 

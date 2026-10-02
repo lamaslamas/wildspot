@@ -12,6 +12,24 @@ import { creaScheda } from './card.js';
 import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri } from './filters.js';
 import { creaInfo } from './info.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
+import { t, traduciPagina, alCambioLingua } from './i18n.js';
+import { creaSelettoreLingua } from './language-switch.js';
+
+// Testi dell'HTML nella lingua scelta e selettore di lingua nella presentazione
+traduciPagina();
+document.querySelector('[data-selettore-lingua]').append(creaSelettoreLingua());
+
+// L'altezza della presentazione dipende dal testo e può risultare frazionaria
+// (es. 634,7px): la mappa sotto finirebbe su mezzi pixel e tra le tile
+// comparirebbero righe sottili. La arrotondiamo al pixel intero.
+const elHero = document.querySelector('.hero');
+function arrotondaAltezzaHero() {
+  elHero.style.minHeight = '';
+  elHero.style.minHeight = `${Math.ceil(elHero.getBoundingClientRect().height)}px`;
+}
+arrotondaAltezzaHero();
+window.addEventListener('resize', debounce(arrotondaAltezzaHero, 150));
+alCambioLingua(arrotondaAltezzaHero);
 
 // Stato dell'app
 const stato = {
@@ -25,8 +43,13 @@ const elStato = document.getElementById('status');
 const btnPosizione = document.getElementById('locate');
 const elBadge = document.getElementById('filters-badge');
 
-function mostraMessaggio(testo, tipo = 'info') {
-  elStato.textContent = testo;
+// Il messaggio viene ricordato come chiave di traduzione, così al cambio di
+// lingua si può ridisegnare
+let ultimoMessaggio = null;
+
+function mostraMessaggio(chiave, parametri = {}, tipo = 'info') {
+  ultimoMessaggio = { chiave, parametri, tipo };
+  elStato.textContent = t(chiave, parametri);
   elStato.dataset.tipo = tipo;
 }
 
@@ -61,10 +84,10 @@ async function caricaOsservazioni() {
   richiestaInCorso = controller;
 
   if (!navigator.onLine) {
-    mostraMessaggio('Sei offline: osservazioni non disponibili', 'errore');
+    mostraMessaggio('stato.offline', {}, 'errore');
     return;
   }
-  mostraMessaggio('Carico le osservazioni…');
+  mostraMessaggio('stato.carico');
 
   try {
     const { osservazioni, totale } = await cercaOsservazioni(
@@ -79,20 +102,16 @@ async function caricaOsservazioni() {
     );
     livello.aggiorna(osservazioni);
 
-    const periodo = `ultimi ${stato.filtri.giorni} giorni`;
-    if (!osservazioni.length) {
-      mostraMessaggio(`Nessuna osservazione negli ${periodo}`);
-    } else if (totale > osservazioni.length) {
-      mostraMessaggio(`Le ${osservazioni.length} più recenti su ${totale} · ${periodo}`);
-    } else {
-      mostraMessaggio(`${osservazioni.length} osservazioni · ${periodo}`);
-    }
+    const parametri = { n: osservazioni.length, totale, giorni: stato.filtri.giorni };
+    if (!osservazioni.length) mostraMessaggio('stato.nessuna', parametri);
+    else if (totale > osservazioni.length) mostraMessaggio('stato.parziale', parametri);
+    else mostraMessaggio(osservazioni.length === 1 ? 'stato.conteggio1' : 'stato.conteggio', parametri);
   } catch (err) {
     if (err.name === 'AbortError') return;
     if (err.status === 429) {
-      mostraMessaggio('Troppe richieste a iNaturalist: attendi un minuto e riprova', 'errore');
+      mostraMessaggio('stato.troppeRichieste', {}, 'errore');
     } else {
-      mostraMessaggio('iNaturalist non risponde: controlla la connessione e riprova', 'errore');
+      mostraMessaggio('stato.erroreRete', {}, 'errore');
     }
   }
 }
@@ -107,13 +126,13 @@ window.addEventListener('online', caricaOsservazioni);
 function apriScheda(o) {
   const scheda = creaScheda(o, {
     onSoloSpecie: (oss) => {
-      stato.filtri.taxon = { id: oss.taxonId, nomeIt: oss.nomeIt, nomeSci: oss.nomeSci };
+      stato.filtri.taxon = { id: oss.taxonId, nomeComune: oss.nomeComune, nomeSci: oss.nomeSci };
       aggiornaBadge();
       chiudiSheet();
       caricaOsservazioni();
     },
   });
-  apriSheet(o.nomeIt || o.nomeSci, scheda, { onChiudi: livello.togliEvidenziazione });
+  apriSheet(o.nomeComune || o.nomeSci, scheda, { onChiudi: livello.togliEvidenziazione });
 }
 
 // --- Filtri
@@ -125,7 +144,7 @@ function aggiornaBadge() {
 
 document.getElementById('open-filters').addEventListener('click', () => {
   apriSheet(
-    'Filtri',
+    t('filtri'),
     creaPannelloFiltri(stato.filtri, (filtri) => {
       salvaFiltri(filtri);
       aggiornaBadge();
@@ -136,8 +155,22 @@ document.getElementById('open-filters').addEventListener('click', () => {
 aggiornaBadge();
 
 // --- Informazioni
-document.getElementById('info').addEventListener('click', () => {
-  apriSheet('Informazioni', creaInfo());
+let infoAperta = false;
+
+function apriInfo() {
+  apriSheet(t('informazioni'), creaInfo(), { onChiudi: () => (infoAperta = false) });
+  infoAperta = true; // dopo apriSheet, che chiama l'onChiudi del pannello precedente
+}
+document.getElementById('info').addEventListener('click', apriInfo);
+
+// --- Cambio di lingua
+alCambioLingua(() => {
+  if (ultimoMessaggio) mostraMessaggio(ultimoMessaggio.chiave, ultimoMessaggio.parametri, ultimoMessaggio.tipo);
+  // Il pannello informazioni (dove si può cambiare lingua) si ridisegna; gli altri si chiudono
+  if (infoAperta) apriInfo();
+  else chiudiSheet();
+  // I nomi delle specie arrivano da iNaturalist nella lingua scelta
+  caricaOsservazioni();
 });
 
 // --- Raggio
@@ -151,7 +184,7 @@ creaSelettoreRaggio(document.querySelector('.radius'), stato.raggioKm, (km) => {
 // --- Posizione GPS
 async function centraSuDiMe() {
   btnPosizione.disabled = true;
-  mostraMessaggio('Cerco la tua posizione…');
+  mostraMessaggio('stato.cercoPosizione');
   try {
     const pos = await leggiPosizione();
     stato.centro = { lat: pos.lat, lng: pos.lng };
@@ -160,7 +193,7 @@ async function centraSuDiMe() {
     mostraRaggio(stato.centro, stato.raggioKm);
     caricaOsservazioni();
   } catch (err) {
-    mostraMessaggio(err.message, 'errore');
+    mostraMessaggio(err.chiave || 'gps.errore', {}, 'errore');
     // Senza GPS mostriamo comunque le osservazioni intorno all'ultimo centro noto,
     // lasciando il messaggio d'errore visibile per qualche secondo
     setTimeout(caricaOsservazioni, 3000);

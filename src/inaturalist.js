@@ -3,6 +3,7 @@
 
 import { fetchJsonConCache } from './cache.js';
 import { GRUPPI } from './groups.js';
+import { linguaAttuale } from './i18n.js';
 
 const API = 'https://api.inaturalist.org/v1';
 const PER_PAGINA = 200; // massimo consentito dall'API in una sola richiesta
@@ -36,7 +37,7 @@ export async function cercaOsservazioni({ centro, raggioKm, giorni, gruppi, taxo
     order_by: 'observed_on',
     order: 'desc',
     d1: dataGiorniFa(giorni),
-    locale: 'it',
+    locale: linguaAttuale(), // nomi comuni delle specie nella lingua scelta
     per_page: PER_PAGINA,
   });
   // Con una specie scelta il gruppo è implicito: evitiamo che i due filtri si escludano
@@ -50,10 +51,10 @@ export async function cercaOsservazioni({ centro, raggioKm, giorni, gruppi, taxo
   };
 }
 
-// Suggerimenti per la ricerca di specie (nomi italiani e scientifici),
+// Suggerimenti per la ricerca di specie (nomi comuni e scientifici),
 // limitati ai gruppi animali gestiti dall'app
 export async function suggerisciTaxa(testo, signal) {
-  const parametri = new URLSearchParams({ q: testo, locale: 'it', per_page: 15, is_active: 'true' });
+  const parametri = new URLSearchParams({ q: testo, locale: linguaAttuale(), per_page: 15, is_active: 'true' });
   const dati = await fetchJsonConCache(`${API}/taxa/autocomplete?${parametri}`, { signal });
   const gruppiValidi = new Set(GRUPPI.map((g) => g.id));
   return dati.results
@@ -61,7 +62,7 @@ export async function suggerisciTaxa(testo, signal) {
     .slice(0, 8)
     .map((t) => ({
       id: t.id,
-      nomeIt: t.preferred_common_name || '',
+      nomeComune: t.preferred_common_name || '',
       nomeSci: t.name,
       rango: t.rank,
       foto: t.default_photo?.square_url || '',
@@ -76,7 +77,7 @@ function normalizza(o) {
   return {
     id: `inat-${o.id}`,
     fonte: 'iNaturalist',
-    nomeIt: o.taxon?.preferred_common_name || o.species_guess || '',
+    nomeComune: o.taxon?.preferred_common_name || o.species_guess || '',
     nomeSci: o.taxon?.name || '',
     taxonId: o.taxon?.id,
     gruppo: o.taxon?.iconic_taxon_name || '',

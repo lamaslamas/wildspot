@@ -4,6 +4,7 @@ import { el, debounce } from './dom.js';
 import { GRUPPI, GRUPPI_PREDEFINITI } from './groups.js';
 import { suggerisciTaxa } from './inaturalist.js';
 import { leggi, scrivi } from './storage.js';
+import { t } from './i18n.js';
 
 export const PERIODI = [7, 14, 30];
 
@@ -15,7 +16,7 @@ export function filtriIniziali() {
   return {
     giorni: PERIODI.includes(salvati.giorni) ? salvati.giorni : 14,
     gruppi: gruppiValidi.length ? gruppiValidi : [...GRUPPI_PREDEFINITI],
-    taxon: null, // { id, nomeIt, nomeSci }
+    taxon: null, // { id, nomeComune, nomeSci }
   };
 }
 
@@ -45,7 +46,7 @@ export function creaPannelloFiltri(filtri, onCambio) {
   }
 
   // --- Periodo
-  const periodo = el('div', { class: 'segmenti', role: 'radiogroup', 'aria-label': 'Periodo' });
+  const periodo = el('div', { class: 'segmenti', role: 'radiogroup', 'aria-label': t('filtri.periodo') });
 
   // --- Gruppi
   const gruppi = el('div', { class: 'chips' });
@@ -55,9 +56,9 @@ export function creaPannelloFiltri(filtri, onCambio) {
   const campo = el('input', {
     type: 'search',
     class: 'campo',
-    placeholder: 'Es. airone, picchio, Vulpes…',
+    placeholder: t('filtri.segnaposto'),
     autocomplete: 'off',
-    'aria-label': 'Cerca una specie',
+    'aria-label': t('filtri.cerca'),
   });
   const suggerimenti = el('ul', { class: 'suggerimenti', role: 'listbox' });
   let richiesta = null;
@@ -85,19 +86,19 @@ export function creaPannelloFiltri(filtri, onCambio) {
                     onclick: () => {
                       campo.value = '';
                       suggerimenti.replaceChildren();
-                      cambia({ taxon: { id: t.id, nomeIt: t.nomeIt, nomeSci: t.nomeSci } });
+                      cambia({ taxon: { id: t.id, nomeComune: t.nomeComune, nomeSci: t.nomeSci } });
                     },
                   },
                   t.foto ? el('img', { src: t.foto, alt: '', loading: 'lazy' }) : el('span', { class: 'foto-vuota' }),
-                  el('span', {}, el('b', {}, t.nomeIt || t.nomeSci), t.nomeIt && el('i', {}, t.nomeSci)),
+                  el('span', {}, el('b', {}, t.nomeComune || t.nomeSci), t.nomeComune && el('i', {}, t.nomeSci)),
                 ),
               ),
             )
-          : [el('li', { class: 'nessuno' }, 'Nessun animale trovato con questo nome')]),
+          : [el('li', { class: 'nessuno' }, t('filtri.nessuno'))]),
       );
     } catch (err) {
       if (err.name !== 'AbortError') {
-        suggerimenti.replaceChildren(el('li', { class: 'nessuno' }, 'Ricerca non disponibile: controlla la connessione'));
+        suggerimenti.replaceChildren(el('li', { class: 'nessuno' }, t('filtri.nonDisponibile')));
       }
     }
   }, 350);
@@ -116,7 +117,7 @@ export function creaPannelloFiltri(filtri, onCambio) {
             'aria-checked': String(filtri.giorni === giorni),
             onclick: () => cambia({ giorni }),
           },
-          `${giorni} giorni`,
+          t('filtri.giorni', { n: giorni }),
         ),
       ),
     );
@@ -138,7 +139,7 @@ export function creaPannelloFiltri(filtri, onCambio) {
             },
           },
           el('span', { class: 'pallino', style: `background:${g.colore}` }),
-          g.nome,
+          t(`gruppo.${g.id}`),
         );
       }),
     );
@@ -148,8 +149,8 @@ export function creaPannelloFiltri(filtri, onCambio) {
         ? el(
             'div',
             { class: 'specie-attiva' },
-            el('span', {}, el('b', {}, filtri.taxon.nomeIt || filtri.taxon.nomeSci), ' ', filtri.taxon.nomeIt && el('i', {}, filtri.taxon.nomeSci)),
-            el('button', { type: 'button', class: 'btn', onclick: () => cambia({ taxon: null }) }, 'Rimuovi'),
+            el('span', {}, el('b', {}, filtri.taxon.nomeComune || filtri.taxon.nomeSci), ' ', filtri.taxon.nomeComune && el('i', {}, filtri.taxon.nomeSci)),
+            el('button', { type: 'button', class: 'btn', onclick: () => cambia({ taxon: null }) }, t('filtri.rimuovi')),
           )
         : '',
     );
@@ -160,11 +161,11 @@ export function creaPannelloFiltri(filtri, onCambio) {
   return el(
     'div',
     { class: 'filtri' },
-    el('h3', {}, 'Periodo'),
+    el('h3', {}, t('filtri.periodo')),
     periodo,
-    el('h3', {}, 'Gruppi di animali'),
+    el('h3', {}, t('filtri.gruppi')),
     gruppi,
-    el('h3', {}, 'Specie'),
+    el('h3', {}, t('filtri.specie')),
     specieScelta,
     campo,
     suggerimenti,
