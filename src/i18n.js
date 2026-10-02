@@ -215,6 +215,13 @@ const TESTI = {
     'legenda.gruppoSpiega': 'Tocca per ingrandire la zona e vederli separati.',
     'legenda.posizione': 'La tua posizione',
 
+    // Heatmap
+    'livello.heatmap': 'Heatmap',
+    'legenda.heatmap': 'Heatmap delle osservazioni',
+    'legenda.heatmapSpiega': "Dal viola al giallo, le zone con più osservazioni su iNaturalist con i filtri attuali (tutte, non solo quelle in elenco). Indica dove gli animali sono stati visti di più, ma anche dove vanno più naturalisti.",
+    'stato.soloHeatmap': 'Solo heatmap: accendi un livello per vedere i singoli punti',
+    'filtri.heatmapNota': 'La heatmap usa i gruppi, la specie e il periodo scelti qui sotto, su tutte le osservazioni di iNaturalist. Con periodi brevi le zone sono poche: rende meglio con "1 anno" o "Sempre".',
+
     // Vista Mappa / Elenco
     'vista.mappa': 'Mappa',
     'vista.elenco': 'Elenco',
@@ -467,6 +474,12 @@ const TESTI = {
     'legenda.gruppo': 'Group of nearby points',
     'legenda.gruppoSpiega': 'Tap to zoom in and see them separately.',
     'legenda.posizione': 'Your location',
+
+    'livello.heatmap': 'Heatmap',
+    'legenda.heatmap': 'Observation heatmap',
+    'legenda.heatmapSpiega': 'From purple to yellow, the areas with the most iNaturalist observations under the current filters (all of them, not only those in the list). It shows where animals were seen most, but also where naturalists go most.',
+    'stato.soloHeatmap': 'Heatmap only: turn on a layer to see individual points',
+    'filtri.heatmapNota': 'The heatmap uses the groups, species and period chosen below, across all iNaturalist observations. Short periods show few areas: it works best with "1 year" or "All time".',
 
     'vista.mappa': 'Map',
     'vista.elenco': 'List',

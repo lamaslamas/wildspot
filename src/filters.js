@@ -12,14 +12,20 @@ export const PERIODI = [7, 30, 365, 0];
 const PERIODO_PREDEFINITO = 30;
 
 // Livelli della mappa che si possono accendere e spegnere
-export const LIVELLI = ['inat', 'ebirdAvvistamenti', 'ebirdHotspot', 'spot'];
+export const LIVELLI = ['inat', 'ebirdAvvistamenti', 'ebirdHotspot', 'spot', 'heatmap'];
+// La heatmap è un modo di visualizzare, non un filtro: parte spenta, non conta
+// nel numero dei filtri attivi e "Azzera" non la tocca
+const SPENTI_ALL_INIZIO = ['heatmap'];
+const LIVELLI_FILTRO = LIVELLI.filter((l) => !SPENTI_ALL_INIZIO.includes(l));
 
 // Stato iniziale: periodo e livelli vengono ricordati; i gruppi partono da
 // quelli predefiniti nelle impostazioni; la specie no (riaprendo l'app è
 // meglio vedere di nuovo tutto)
 export function filtriIniziali(impostazioni) {
   const salvati = leggi('filtri', {});
-  const livelli = Object.fromEntries(LIVELLI.map((l) => [l, salvati.livelli?.[l] !== false]));
+  const livelli = Object.fromEntries(
+    LIVELLI.map((l) => [l, salvati.livelli?.[l] ?? !SPENTI_ALL_INIZIO.includes(l)]),
+  );
   return {
     giorni: PERIODI.includes(salvati.giorni) ? salvati.giorni : PERIODO_PREDEFINITO,
     gruppi: [...impostazioni.gruppiPredefiniti],
@@ -34,12 +40,12 @@ export function salvaFiltri(filtri) {
 
 // Nessun filtro: tutto visibile. È lo stato a cui porta il pulsante "Azzera filtri"
 // (anche i valori predefiniti delle impostazioni vengono tolti)
-export function filtriVuoti() {
+export function filtriVuoti(attuali) {
   return {
     giorni: 0, // sempre
     gruppi: GRUPPI.map((g) => g.id),
     taxon: null,
-    livelli: Object.fromEntries(LIVELLI.map((l) => [l, true])),
+    livelli: { ...Object.fromEntries(LIVELLI_FILTRO.map((l) => [l, true])), heatmap: attuali.livelli.heatmap },
   };
 }
 
@@ -49,7 +55,7 @@ export function contaFiltriAttivi(filtri) {
   if (filtri.giorni !== 0) n++;
   if (filtri.gruppi.length < GRUPPI.length) n++;
   if (filtri.taxon) n++;
-  if (LIVELLI.some((l) => !filtri.livelli[l])) n++;
+  if (LIVELLI_FILTRO.some((l) => !filtri.livelli[l])) n++;
   return n;
 }
 
@@ -66,7 +72,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
   }
 
   // --- Azzera: toglie tutti i filtri (in fondo al pannello, sempre visibile)
-  const btnAzzera = el('button', { type: 'button', class: 'btn btn-largo', onclick: () => cambia(filtriVuoti()) });
+  const btnAzzera = el('button', { type: 'button', class: 'btn btn-largo', onclick: () => cambia(filtriVuoti(filtri)) });
   const piedeAzzera = el('div', { class: 'piede-azzera' }, btnAzzera);
 
   // --- Livelli
@@ -80,6 +86,8 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
         ' ',
         el('button', { type: 'button', class: 'link-btn', onclick: onApriImpostazioni }, t('filtri.apriImpostazioni')),
       );
+
+  const notaHeatmap = el('p', { class: 'nota' }, t('filtri.heatmapNota'));
 
   // --- Periodo
   const notaPeriodo = el('p', { class: 'nota' });
@@ -147,6 +155,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
     btnAzzera.disabled = attivi === 0;
     btnAzzera.textContent = attivi ? `${t('filtri.azzera')} (${attivi})` : t('filtri.nessunFiltro');
 
+    notaHeatmap.hidden = !filtri.livelli.heatmap;
     livelli.replaceChildren(
       ...LIVELLI.map((id) => {
         const richiedeEbird = id.startsWith('ebird');
@@ -229,6 +238,7 @@ export function creaPannelloFiltri(filtri, onCambio, { ebirdDisponibile, onApriI
     el('h3', {}, t('filtri.livelli')),
     livelli,
     avvisoEbird,
+    notaHeatmap,
     el('h3', {}, t('filtri.periodo')),
     periodo,
     notaPeriodo,

@@ -23,6 +23,7 @@ import { creaLivelloSole } from './sun-layer.js';
 import { leggiSpot, trovaSpot, salvaSpot, eliminaSpot, aggiungiVisita, togliVisita, esportaJson, importaJson } from './spots.js';
 import { creaDiario, creaSchedaSpot, creaModuloSpot } from './spots-ui.js';
 import { creaLivelloSpot } from './spots-layer.js';
+import { creaLivelloHeatmap } from './heatmap-layer.js';
 import { dataIso } from './weather.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
@@ -100,6 +101,7 @@ const raggruppamento = creaRaggruppamento(mappa);
 const livelloEbird = creaLivelloEbird(raggruppamento, apriSchedaLuogo);
 const livelloInat = creaLivelloOsservazioni(mappa, raggruppamento, apriScheda);
 const livelloSole = creaLivelloSole(mappa);
+const livelloHeatmap = creaLivelloHeatmap(mappa);
 const livelloSpot = creaLivelloSpot(mappa, apriSpot);
 
 // Toccando un punto vuoto della mappa: con il pannello luce o il modulo di uno
@@ -207,12 +209,15 @@ async function caricaDati() {
   const vuoiHotspot = Boolean(chiave) && filtri.livelli.ebirdHotspot;
   const livelloEbirdAcceso = Boolean(chiave) && (filtri.livelli.ebirdAvvistamenti || vuoiHotspot);
 
+  // La heatmap ha tile proprie: si aggiorna subito, anche offline mostra ciò che è in cache
+  livelloHeatmap.aggiorna(filtri.livelli.heatmap, filtri);
+
   if (!vuoiInat && !livelloEbirdAcceso) {
     livelloInat.aggiorna([]);
     livelloEbird.aggiorna([], { avvistamenti: false, hotspot: false });
     ultimiDati = { osservazioni: [], luoghi: [], visibili: { avvistamenti: false, hotspot: false } };
     aggiornaElenco();
-    mostraMessaggio('stato.nessunLivello');
+    mostraMessaggio(filtri.livelli.heatmap ? 'stato.soloHeatmap' : 'stato.nessunLivello');
     return;
   }
   if (!navigator.onLine) {

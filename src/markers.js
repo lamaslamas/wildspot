@@ -34,6 +34,7 @@ export function htmlLivello(id) {
   if (id === 'ebirdAvvistamenti') return htmlLuogoEbird(null);
   if (id === 'ebirdHotspot') return htmlHotspot();
   if (id === 'spot') return HTML_SPOT;
+  if (id === 'heatmap') return '<span class="mk mk-inat mk-heat"></span>';
   // iNaturalist mostra tutti i gruppi: badge rotondo con i loro colori
   return '<span class="mk mk-inat mk-multi"></span>';
 }

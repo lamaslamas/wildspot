@@ -51,6 +51,21 @@ export async function cercaOsservazioni({ centro, raggioKm, giorni, gruppi, taxo
   };
 }
 
+/**
+ * Indirizzo delle tile della heatmap di iNaturalist con gli stessi filtri
+ * delle osservazioni (gruppi o specie, periodo, solo grado "ricerca").
+ * La densità è calcolata sul server su tutte le osservazioni, non solo sulle
+ * 200 che l'app scarica; le osservazioni oscurate vi compaiono con le loro
+ * coordinate pubbliche imprecise, come sul sito di iNaturalist.
+ */
+export function urlHeatmap({ giorni, gruppi, taxonId }) {
+  const parametri = new URLSearchParams({ quality_grade: 'research' });
+  if (giorni) parametri.set('d1', dataGiorniFa(giorni));
+  if (taxonId) parametri.set('taxon_id', taxonId);
+  else parametri.set('iconic_taxa', gruppi.join(','));
+  return `${API}/heatmap/{z}/{x}/{y}.png?${parametri}`;
+}
+
 // Suggerimenti per la ricerca di specie (nomi comuni e scientifici),
 // limitati ai gruppi animali gestiti dall'app
 export async function suggerisciTaxa(testo, signal) {

@@ -1835,3 +1835,25 @@ h3:first-child {
     padding-left: 412px;
   }
 }
+
+/* ---------- Heatmap ---------- */
+/* Simbolo nei filtri e nella legenda: i colori della heatmap di iNaturalist */
+.mk-inat.mk-heat,
+.legenda-heat {
+  background: radial-gradient(circle, #ffe600 0 20%, #3ddc84 45%, #8f4fd8 75%, rgb(143 79 216 / 0.25) 100%);
+}
+
+.legenda-heat {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+/* Le tile di iNaturalist sono tenui: più saturazione e contrasto per leggerle all'aperto */
+.tile-heatmap {
+  filter: saturate(1.5) contrast(1.25);
+}
