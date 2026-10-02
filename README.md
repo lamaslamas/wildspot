@@ -2,7 +2,7 @@
 
 Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA. Disponibile in italiano e in inglese.
 
-> Stato: **fase 3** — mappa, posizione GPS, raggio, osservazioni iNaturalist, hotspot e avvistamenti eBird, filtri, impostazioni.
+> Stato: **fase 4** — mappa, posizione GPS, raggio, osservazioni iNaturalist, hotspot e avvistamenti eBird, filtri, impostazioni, luce (alba, tramonto, ora dorata e blu, direzione del sole) e meteo orario.
 
 ## Avvio in locale
 
@@ -51,6 +51,10 @@ src/inaturalist.js         chiamate all'API di iNaturalist
 src/ebird.js               chiamate all'API di eBird e raggruppamento per luogo
 src/ebird-layer.js         luoghi eBird sulla mappa
 src/settings.js            impostazioni: chiave eBird, raggio e gruppi predefiniti, lingua
+src/sun.js                 calcoli sul sole con SunCalc (orari, posizione, fasi della luce)
+src/sun-layer.js           punto scelto e direzione del sole sulla mappa
+src/light-panel.js         pannello luce e meteo con cursore orario
+src/weather.js             previsioni orarie da Open-Meteo
 src/observations-layer.js  osservazioni sulla mappa (con aree di incertezza)
 src/card.js                schede: osservazione iNaturalist e luogo eBird
 src/filters.js             filtri: livelli, periodo, gruppi, ricerca specie
@@ -71,8 +75,10 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 
 - **iNaturalist**: solo osservazioni di grado "ricerca" con foto, al massimo le 200 più recenti per area. Le risposte restano in cache 10 minuti e le richieste partono solo quando smetti di muovere la mappa, per rispettare i limiti dell'API.
 - **eBird**: serve una chiave personale gratuita, da chiedere su <https://ebird.org/api/keygen> e da inserire nelle **Impostazioni** dell'app (icona a ingranaggio). La chiave viene salvata solo nel `localStorage` del dispositivo e inviata solo a eBird: **non va mai scritta nel codice né committata**. L'API di eBird accetta chiamate dal browser (CORS aperto), quindi non serve un proxy. eBird fornisce al massimo gli ultimi 30 giorni e un raggio di 50 km; gli avvistamenti sono raggruppati per luogo (un indicatore per hotspot o località, con l'elenco delle specie). eBird nasconde già le specie sensibili e l'app non aggira questo comportamento.
+- **Luce**: calcolata sul telefono con SunCalc, senza connessione. Ora blu = sole tra −6° e −4°, ora dorata = tra −4° e +6°. Gli orari sono mostrati nel fuso orario del telefono.
+- **Meteo**: Open-Meteo, nessuna chiave; copre circa gli ultimi tre mesi e i prossimi 15 giorni.
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra come un anello tratteggiato con un'area di incertezza sfumata e non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni
 
-Mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Osservazioni e foto da [iNaturalist](https://www.inaturalist.org); i diritti delle foto restano ai rispettivi autori. Avvistamenti e hotspot da [eBird](https://ebird.org) (Cornell Lab of Ornithology).
+Mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Osservazioni e foto da [iNaturalist](https://www.inaturalist.org); i diritti delle foto restano ai rispettivi autori. Avvistamenti e hotspot da [eBird](https://ebird.org) (Cornell Lab of Ornithology). Previsioni meteo da [Open-Meteo](https://open-meteo.com) (CC BY 4.0).

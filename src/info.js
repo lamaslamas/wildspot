@@ -24,6 +24,7 @@ export function creaInfo() {
       el('li', {}, conLink('info.fonteMappa', 'https://www.openstreetmap.org/copyright', 'OpenStreetMap')),
       el('li', {}, conLink('info.fonteInat', 'https://www.inaturalist.org', 'iNaturalist')),
       el('li', {}, conLink('info.fonteEbird', 'https://ebird.org', 'eBird')),
+      el('li', {}, conLink('info.fonteMeteo', 'https://open-meteo.com', 'Open-Meteo')),
     ),
   );
 }

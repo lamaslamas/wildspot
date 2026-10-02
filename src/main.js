@@ -15,6 +15,8 @@ import { creaScheda, creaSchedaLuogo } from './card.js';
 import { filtriIniziali, salvaFiltri, contaFiltriAttivi, creaPannelloFiltri } from './filters.js';
 import { leggiImpostazioni, creaPannelloImpostazioni } from './settings.js';
 import { creaInfo } from './info.js';
+import { creaPannelloLuce } from './light-panel.js';
+import { creaLivelloSole } from './sun-layer.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
 import { creaSelettoreLingua } from './language-switch.js';
@@ -55,6 +57,7 @@ const stato = {
   centro: leggi('ultimoCentro', CENTRO_PREDEFINITO), // centro della ricerca
   raggioKm: impostazioni.raggioPredefinito,
   filtri: filtriIniziali(impostazioni),
+  posizioneGps: null, // ultima posizione nota dell'utente
 };
 
 const elStato = document.getElementById('status');
@@ -80,13 +83,29 @@ mostraRaggio(stato.centro, stato.raggioKm);
 // I luoghi eBird stanno sotto alle osservazioni iNaturalist (creati prima)
 const livelloEbird = creaLivelloEbird(mappa, apriSchedaLuogo);
 const livelloInat = creaLivelloOsservazioni(mappa, apriScheda);
+const livelloSole = creaLivelloSole(mappa);
 
-// Toccando un punto vuoto della mappa si chiude il pannello aperto
-mappa.on('click', chiudiSheet);
+// Toccando un punto vuoto della mappa: con il pannello luce aperto si sposta
+// il punto; altrimenti si chiude il pannello aperto
+mappa.on('click', (e) => {
+  if (pannelloAperto === 'luce' && pannelloLuce) {
+    pannelloLuce.impostaPunto({ lat: e.latlng.lat, lng: e.latlng.lng });
+  } else {
+    chiudiSheet();
+  }
+});
+
+// Gli spostamenti fatti dal codice (per mostrare il punto sopra al pannello)
+// non devono spostare l'area di ricerca
+let ignoraProssimoSpostamento = false;
 
 // Quando l'utente sposta la mappa, la ricerca segue il nuovo centro.
 // Ignoriamo i piccoli spostamenti per non fare richieste inutili.
 mappa.on('moveend', () => {
+  if (ignoraProssimoSpostamento) {
+    ignoraProssimoSpostamento = false;
+    return;
+  }
   const c = mappa.getCenter();
   const nuovoCentro = { lat: c.lat, lng: c.lng };
   if (distanzaKm(nuovoCentro, stato.centro) < stato.raggioKm * 0.2) return;
@@ -194,8 +213,9 @@ window.addEventListener('online', caricaDati);
 // ridisegnare quando cambia la lingua.
 let pannelloAperto = null;
 
-function apriPannello(nome, titolo, contenuto, onChiudi) {
+function apriPannello(nome, titolo, contenuto, onChiudi, classe) {
   apriSheet(titolo, contenuto, {
+    classe,
     onChiudi: () => {
       pannelloAperto = null;
       onChiudi?.();
@@ -207,6 +227,7 @@ function apriPannello(nome, titolo, contenuto, onChiudi) {
 // --- Schede
 function apriScheda(o) {
   const scheda = creaScheda(o, {
+    onLuce: apriLuce,
     onSoloSpecie: (oss) => {
       stato.filtri.taxon = { id: oss.taxonId, nomeComune: oss.nomeComune, nomeSci: oss.nomeSci };
       aggiornaBadge();
@@ -218,8 +239,60 @@ function apriScheda(o) {
 }
 
 function apriSchedaLuogo(luogo, opzioni) {
-  apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, opzioni), livelloEbird.togliEvidenziazione);
+  apriPannello('scheda', luogo.nome, creaSchedaLuogo(luogo, { ...opzioni, onLuce: apriLuce }), livelloEbird.togliEvidenziazione);
 }
+
+// --- Luce e meteo
+let pannelloLuce = null;
+
+function apriLuce(punto) {
+  if (pannelloAperto === 'luce' && pannelloLuce) {
+    pannelloLuce.impostaPunto(punto);
+  } else {
+    // Chiudiamo prima il pannello precedente: la sua chiusura non deve
+    // cancellare il disegno del sole appena creato
+    chiudiSheet();
+    pannelloLuce = creaPannelloLuce({ punto, onSole: livelloSole.aggiorna });
+    apriPannello(
+      'luce',
+      t('luce.titolo'),
+      pannelloLuce.elemento,
+      () => {
+        livelloSole.nascondi();
+        pannelloLuce = null;
+      },
+      'sheet-basso',
+    );
+  }
+  mostraSopraAlPannello(punto);
+}
+
+// Sposta la mappa in modo che il punto stia al centro della parte non coperta dal pannello
+function mostraSopraAlPannello({ lat, lng }) {
+  const contenitore = mappa.getContainer().getBoundingClientRect();
+  let visibile; // area della mappa visibile, in coordinate del contenitore
+  if (window.innerWidth >= 700) {
+    // su schermi larghi il pannello sta a sinistra (420px + margine)
+    visibile = { x1: Math.max(0, 436 - contenitore.left), x2: contenitore.width, y1: 0, y2: contenitore.height };
+  } else {
+    const altoPannello = window.innerHeight * 0.55; // come .sheet-basso
+    const fondo = Math.min(contenitore.height, window.innerHeight - altoPannello - contenitore.top);
+    visibile = { x1: 0, x2: contenitore.width, y1: 0, y2: fondo };
+  }
+  if (visibile.y2 - visibile.y1 < 120) return; // troppo poco spazio: lasciamo stare
+  const attuale = mappa.latLngToContainerPoint([lat, lng]);
+  const dx = attuale.x - (visibile.x1 + visibile.x2) / 2;
+  const dy = attuale.y - (visibile.y1 + visibile.y2) / 2;
+  if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+  ignoraProssimoSpostamento = true;
+  mappa.panBy([dx, dy]);
+}
+
+// Il pulsante apre luce e meteo sulla mia posizione (o sul centro della mappa)
+document.getElementById('light').addEventListener('click', () => {
+  const c = mappa.getCenter();
+  apriLuce(stato.posizioneGps || { lat: c.lat, lng: c.lng });
+});
 
 // --- Filtri
 function aggiornaBadge() {
@@ -277,7 +350,12 @@ alCambioLingua(() => {
   // Impostazioni e informazioni si ridisegnano nella nuova lingua; gli altri pannelli si chiudono
   if (pannelloAperto === 'impostazioni') apriImpostazioni();
   else if (pannelloAperto === 'info') apriInfo();
-  else chiudiSheet();
+  else if (pannelloAperto === 'luce' && pannelloLuce) {
+    // ricreiamo il pannello luce nella nuova lingua, sullo stesso punto
+    const punto = pannelloLuce.punto();
+    chiudiSheet();
+    apriLuce(punto);
+  } else chiudiSheet();
   // I nomi delle specie arrivano dalle API nella lingua scelta
   caricaDati();
 });
@@ -296,6 +374,7 @@ async function centraSuDiMe() {
   try {
     const pos = await leggiPosizione();
     stato.centro = { lat: pos.lat, lng: pos.lng };
+    stato.posizioneGps = { lat: pos.lat, lng: pos.lng };
     scrivi('ultimoCentro', stato.centro); // alla prossima apertura partiamo da qui
     mostraPosizione(pos);
     mostraRaggio(stato.centro, stato.raggioKm);

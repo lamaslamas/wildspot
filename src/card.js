@@ -19,9 +19,9 @@ function distanzaLeggibile(metri) {
 
 /**
  * @param {object} o osservazione normalizzata
- * @param {{onSoloSpecie?: (o:object) => void}} azioni
+ * @param {{onSoloSpecie?: (o:object) => void, onLuce?: (punto) => void}} azioni
  */
-export function creaScheda(o, { onSoloSpecie } = {}) {
+export function creaScheda(o, { onSoloSpecie, onLuce } = {}) {
   const g = gruppo(o.gruppo);
 
   return el(
@@ -71,6 +71,7 @@ export function creaScheda(o, { onSoloSpecie } = {}) {
       onSoloSpecie &&
         o.taxonId &&
         el('button', { class: 'btn', type: 'button', onclick: () => onSoloSpecie(o) }, t('scheda.soloSpecie')),
+      onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: o.lat, lng: o.lng }) }, t('scheda.luceMeteo')),
     ),
   );
 }
@@ -88,9 +89,9 @@ function dataEbird(testo) {
  * Scheda di un luogo eBird: dati dell'hotspot (se lo è) ed elenco degli
  * avvistamenti recenti, dal più recente.
  * @param {object} luogo  luogo creato da raggruppaPerLuogo
- * @param {{conAvvistamenti: boolean}} opzioni  se mostrare gli avvistamenti
+ * @param {{conAvvistamenti: boolean, onLuce?: (punto) => void}} opzioni
  */
-export function creaSchedaLuogo(luogo, { conAvvistamenti }) {
+export function creaSchedaLuogo(luogo, { conAvvistamenti, onLuce }) {
   const avvistamenti = conAvvistamenti ? luogo.avvistamenti : [];
   const linkEbird = luogo.hotspot
     ? `https://ebird.org/hotspot/${luogo.locId}`
@@ -145,11 +146,12 @@ export function creaSchedaLuogo(luogo, { conAvvistamenti }) {
         ),
       ),
     luogo.hotspot && !avvistamenti.length && el('p', { class: 'nota' }, t('ebird.nessunRecente')),
-    linkEbird &&
-      el(
-        'div',
-        { class: 'scheda-azioni' },
+    el(
+      'div',
+      { class: 'scheda-azioni' },
+      linkEbird &&
         el('a', { class: 'btn btn-primario', href: linkEbird, target: '_blank', rel: 'noopener' }, t('scheda.apriSu', { fonte: 'eBird' })),
-      ),
+      onLuce && el('button', { class: 'btn', type: 'button', onclick: () => onLuce({ lat: luogo.lat, lng: luogo.lng }) }, t('scheda.luceMeteo')),
+    ),
   );
 }

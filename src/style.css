@@ -377,8 +377,8 @@ body {
   display: none;
 }
 
-/* Pulsante flottante sopra la mappa */
-.locate {
+/* Pulsanti flottanti sopra la mappa */
+.fab {
   position: absolute;
   right: 16px;
   bottom: 36px; /* sopra le attribuzioni */
@@ -395,8 +395,15 @@ body {
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
 }
 
-.locate:disabled {
+.fab:disabled {
   opacity: 0.6;
+}
+
+/* Luce e meteo: sopra al pulsante della posizione, sfondo ocra */
+.fab-luce {
+  bottom: 104px;
+  background: var(--ocra-chiaro);
+  color: var(--verde-scuro);
 }
 
 .icon-btn {
@@ -900,4 +907,254 @@ h3:first-child {
 .avv-meta {
   font-size: 0.88rem;
   color: var(--testo-secondario);
+}
+
+/* ---------- Luce e meteo: elementi sulla mappa ---------- */
+.punto-luce {
+  fill: #fff;
+  fill-opacity: 0.85;
+  stroke: var(--ocra);
+  stroke-width: 3;
+}
+
+.punto-luce-centro {
+  fill: var(--verde-scuro);
+  stroke: none;
+}
+
+.linea-sole {
+  stroke: #f2b31b;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.disco-sole {
+  fill: #ffd23f;
+  fill-opacity: 1;
+  stroke: #e08e00;
+  stroke-width: 2;
+}
+
+.linea-sole.sotto,
+.disco-sole.sotto {
+  stroke: #7d8590;
+  stroke-dasharray: 5 5;
+}
+
+.disco-sole.sotto {
+  fill: #c5cad1;
+  stroke-dasharray: none;
+}
+
+.linea-alba-tramonto {
+  stroke: var(--ocra-testo);
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+}
+
+.etichetta-sole {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--ocra-testo);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- Luce e meteo: pannello ---------- */
+/* Pannello più basso, per lasciare visibili punto e freccia del sole */
+.sheet.sheet-basso {
+  max-height: 55vh;
+}
+
+.riga-data {
+  display: flex;
+  gap: 8px;
+}
+
+.campo-data {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-icona {
+  flex: none;
+  width: var(--altezza-tocco);
+  padding: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.riga-data .btn[hidden] {
+  display: none;
+}
+
+.luce-adesso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.luce-ora {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--verde-scuro);
+  font-variant-numeric: tabular-nums;
+}
+
+.luce-sole {
+  margin: 2px 0 10px;
+  color: var(--testo-secondario);
+  font-size: 0.95rem;
+}
+
+.etichetta.fase-notte { background: #1c2541; color: #fff; }
+.etichetta.fase-blu { background: #3a5a98; color: #fff; }
+.etichetta.fase-dorata { background: #e8a21a; color: var(--verde-scuro); }
+.etichetta.fase-giorno { background: #d7ecf6; color: #17465c; }
+
+/* Cursore orario: la barra mostra le fasi della luce lungo le 24 ore */
+.cursore-ora {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 44px; /* area di tocco ampia */
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cursore-ora::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 7px;
+  background: var(--sfondo-cursore, #ccc);
+}
+
+.cursore-ora::-moz-range-track {
+  height: 14px;
+  border-radius: 7px;
+  background: var(--sfondo-cursore, #ccc);
+}
+
+.cursore-ora::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -8px;
+  border: 3px solid var(--verde-scuro);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}
+
+.cursore-ora::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--verde-scuro);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.tacche {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -6px;
+  font-size: 0.75rem;
+  color: var(--testo-secondario);
+}
+
+.orari {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  margin: 14px 0 0;
+}
+
+.orari dt {
+  display: flex;
+  align-items: center;
+  color: var(--testo-secondario);
+  font-weight: 600;
+}
+
+.orari dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pallino.fase-alba { background: #f2b31b; }
+.pallino.fase-dorata { background: #e8a21a; }
+.pallino.fase-blu { background: #3a5a98; }
+
+/* Striscia orizzontale con il meteo ora per ora */
+.striscia-meteo {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.ora-meteo {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 78px;
+  padding: 8px 4px;
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--testo);
+  font: inherit;
+  font-size: 0.8rem;
+  scroll-snap-align: center;
+  cursor: pointer;
+}
+
+.ora-meteo.dorata {
+  border-color: var(--ocra-chiaro);
+  background: var(--ocra-tenue);
+}
+
+.ora-meteo.attiva {
+  border-color: var(--verde-scuro);
+  box-shadow: 0 0 0 2px var(--verde-scuro);
+}
+
+.om-ora {
+  font-weight: 700;
+}
+
+.om-icona {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.om-temp {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.om-dato {
+  white-space: nowrap;
+  color: var(--testo-secondario);
+}
+
+.freccia-vento {
+  display: inline-block;
+  font-weight: 800;
+  color: var(--verde-scuro);
+}
+
+.legenda-meteo {
+  font-size: 0.8rem;
 }

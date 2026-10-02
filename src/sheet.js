@@ -9,13 +9,14 @@ const btnChiudi = document.getElementById('sheet-close');
 let allaChiusura = null;
 
 // `contenuto` è un elemento DOM già costruito
-export function apriSheet(titolo, contenuto, { onChiudi } = {}) {
+// `classe` aggiunge una variante di stile (es. 'sheet-basso' per lasciare più mappa visibile)
+export function apriSheet(titolo, contenuto, { onChiudi, classe } = {}) {
   if (allaChiusura) allaChiusura(); // chiude "logicamente" il pannello precedente
   allaChiusura = onChiudi || null;
   elTitolo.textContent = titolo;
   elCorpo.replaceChildren(contenuto);
   elCorpo.scrollTop = 0;
-  elSheet.classList.add('aperto');
+  elSheet.className = `sheet aperto ${classe || ''}`.trim();
   elSheet.setAttribute('aria-hidden', 'false');
 }
 
