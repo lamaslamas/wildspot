@@ -52,26 +52,36 @@ body {
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.25;
   text-align: right;
+  /* al massimo due righe, poi puntini */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Gli errori vanno a capo su una riga dedicata, sotto il titolo */
 .status[data-tipo='errore'] {
   flex-basis: 100%;
+  order: 3; /* sotto titolo e pulsante info */
   text-align: left;
-  white-space: normal;
+  -webkit-line-clamp: 4;
   color: #ffd7d3;
   font-weight: 600;
 }
 
 /* Mappa a tutta altezza */
-#map {
+.map-wrap {
+  position: relative;
   flex: 1;
   min-height: 0;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
 }
 
 /* Comandi in basso */
@@ -92,34 +102,20 @@ body {
   min-width: 0;
 }
 
-.radius-label {
-  font-weight: 600;
-  font-size: 0.85rem;
-  margin-right: 2px;
-}
-
 .radius-btn {
   flex: 1;
   min-width: 0;
   min-height: var(--altezza-tocco);
-  padding: 0 4px;
+  padding: 0 2px;
   border: 2px solid var(--verde);
   border-radius: 10px;
   background: #fff;
   color: var(--verde);
   font: inherit;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   white-space: nowrap;
   cursor: pointer;
-}
-
-/* Su schermi stretti l'etichetta "Raggio" lascia spazio ai pulsanti
-   (resta comunque l'aria-label del gruppo per i lettori di schermo) */
-@media (max-width: 400px) {
-  .radius-label {
-    display: none;
-  }
 }
 
 .radius-btn[aria-checked='true'] {
@@ -127,8 +123,44 @@ body {
   color: #fff;
 }
 
-.locate {
+.filters-btn {
   flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--altezza-tocco);
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--oro);
+  color: var(--verde);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--verde);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 22px;
+  text-align: center;
+}
+
+.badge[hidden] {
+  display: none;
+}
+
+/* Pulsante flottante sopra la mappa */
+.locate {
+  position: absolute;
+  right: 16px;
+  bottom: 36px; /* sopra le attribuzioni */
+  z-index: 500; /* sopra la mappa Leaflet */
   width: 56px;
   height: 56px;
   border: none;
@@ -145,7 +177,22 @@ body {
   opacity: 0.6;
 }
 
-button:focus-visible {
+.icon-btn {
+  flex: none;
+  width: var(--altezza-tocco);
+  height: var(--altezza-tocco);
+  margin: -8px -12px -8px 0;
+  border: none;
+  background: none;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
   outline: 3px solid var(--oro);
   outline-offset: 2px;
 }
@@ -177,4 +224,303 @@ button:focus-visible {
 /* Attribuzioni leggibili */
 .leaflet-control-attribution {
   font-size: 0.75rem;
+}
+
+/* ---------- Pannello a scomparsa dal basso ---------- */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sfondo);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 0.25);
+  transform: translateY(105%);
+  transition: transform 0.2s ease-out;
+  visibility: hidden;
+}
+
+.sheet.aperto {
+  transform: none;
+  visibility: visible;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.sheet-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 16px calc(env(safe-area-inset-bottom) + 20px);
+}
+
+@media (min-width: 700px) {
+  /* Su tablet e desktop il pannello non occupa tutta la larghezza */
+  .sheet {
+    left: 16px;
+    right: auto;
+    width: 420px;
+  }
+}
+
+/* ---------- Elementi comuni ---------- */
+h3 {
+  margin: 18px 0 8px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--verde-chiaro);
+}
+
+h3:first-child {
+  margin-top: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--altezza-tocco);
+  padding: 0 16px;
+  border: 2px solid var(--verde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--verde);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primario {
+  background: var(--verde);
+  color: #fff;
+}
+
+.pallino {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: baseline;
+}
+
+.avviso {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--oro);
+  background: #fff8e1;
+  font-size: 0.95rem;
+}
+
+/* ---------- Filtri ---------- */
+.segmenti {
+  display: flex;
+  gap: 6px;
+}
+
+.segmento,
+.chip {
+  min-height: var(--altezza-tocco);
+  border: 2px solid var(--verde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--verde);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmento {
+  flex: 1;
+}
+
+.segmento[aria-checked='true'],
+.chip[aria-pressed='true'] {
+  background: var(--verde);
+  color: #fff;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+}
+
+.chip[aria-pressed='true'] .pallino {
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.campo {
+  width: 100%;
+  min-height: var(--altezza-tocco);
+  padding: 0 12px;
+  border: 2px solid #999;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.specie-attiva {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 10px;
+  background: #eef4ef;
+}
+
+.specie-attiva i,
+.suggerimento i {
+  color: #555;
+}
+
+.suggerimenti {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggerimento {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 4px 0;
+  border: none;
+  border-bottom: 1px solid #eee;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggerimento img,
+.foto-vuota {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #ddd;
+}
+
+.suggerimento span {
+  display: flex;
+  flex-direction: column;
+}
+
+.nessuno {
+  padding: 10px 0;
+  color: #555;
+}
+
+/* ---------- Scheda osservazione ---------- */
+.scheda-foto {
+  margin: 0 0 12px;
+}
+
+.scheda-foto img {
+  display: block;
+  width: 100%;
+  max-height: 38vh;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #ddd;
+}
+
+.scheda-foto figcaption {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.scheda-nome {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.scheda-sci {
+  margin: 2px 0 0;
+  color: #444;
+}
+
+.scheda-dati {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin: 14px 0 0;
+}
+
+.scheda-dati dt {
+  font-weight: 600;
+  color: #555;
+}
+
+.scheda-dati dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.scheda-azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.scheda-azioni .btn {
+  flex: 1 1 auto;
+}
+
+/* ---------- Informazioni ---------- */
+.info ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.info li {
+  margin-bottom: 8px;
+}
+
+.info a,
+.leaflet-control-attribution a {
+  color: var(--verde-chiaro);
+}
+
+/* Leaflet mette a fuoco la mappa al tocco: niente bordo, salvo navigazione da tastiera */
+.leaflet-container:focus:not(:focus-visible) {
+  outline: none;
 }

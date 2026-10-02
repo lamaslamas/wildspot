@@ -12,16 +12,17 @@
     <header class="topbar">
       <h1 class="brand">Wildspot</h1>
       <p id="status" class="status" role="status" aria-live="polite"></p>
+      <button id="info" class="icon-btn" type="button" aria-label="Informazioni e comportamento corretto">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M12 11v6M12 7v.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+      </button>
     </header>
 
-    <main id="map" aria-label="Mappa"></main>
-
-    <!-- Comandi in basso, raggiungibili con il pollice -->
-    <nav class="controls" aria-label="Comandi mappa">
-      <div class="radius" role="radiogroup" aria-label="Raggio di ricerca">
-        <span class="radius-label">Raggio</span>
-        <!-- I pulsanti del raggio vengono generati da src/radius.js -->
-      </div>
+    <main class="map-wrap">
+      <div id="map" aria-label="Mappa"></div>
+      <!-- Pulsante flottante sopra la mappa, in basso a destra -->
       <button id="locate" class="locate" type="button" aria-label="Centra sulla mia posizione">
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
           <circle cx="12" cy="12" r="4" fill="currentColor" />
@@ -29,7 +30,30 @@
           <path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="currentColor" stroke-width="2" />
         </svg>
       </button>
+    </main>
+
+    <!-- Comandi in basso, raggiungibili con il pollice -->
+    <nav class="controls" aria-label="Comandi mappa">
+      <div class="radius" role="radiogroup" aria-label="Raggio di ricerca">
+        <!-- I pulsanti del raggio vengono generati da src/radius.js -->
+      </div>
+      <button id="open-filters" class="filters-btn" type="button">
+        Filtri <span id="filters-badge" class="badge" hidden></span>
+      </button>
     </nav>
+
+    <!-- Pannello a scomparsa dal basso: usato per filtri, schede e informazioni -->
+    <section id="sheet" class="sheet" aria-hidden="true" aria-labelledby="sheet-title">
+      <div class="sheet-head">
+        <h2 id="sheet-title" class="sheet-title"></h2>
+        <button id="sheet-close" class="icon-btn" type="button" aria-label="Chiudi">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <div id="sheet-body" class="sheet-body"></div>
+    </section>
 
     <script type="module" src="/src/main.js"></script>
   </body>

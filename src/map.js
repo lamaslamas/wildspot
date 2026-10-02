@@ -47,8 +47,10 @@ export function mostraPosizione({ lat, lng, precisione }) {
   }
 }
 
-// Disegna il cerchio del raggio di ricerca e adatta lo zoom per contenerlo
-export function mostraRaggio(centro, raggioKm) {
+// Disegna il cerchio del raggio di ricerca.
+// Con `adatta` (predefinito) lo zoom cambia per contenere tutto il cerchio;
+// quando è l'utente a spostare la mappa, invece, la vista resta com'è.
+export function mostraRaggio(centro, raggioKm, { adatta = true } = {}) {
   const punto = [centro.lat, centro.lng];
   if (!cerchioRaggio) {
     cerchioRaggio = L.circle(punto, {
@@ -59,5 +61,5 @@ export function mostraRaggio(centro, raggioKm) {
   } else {
     cerchioRaggio.setLatLng(punto).setRadius(raggioKm * 1000);
   }
-  mappa.fitBounds(cerchioRaggio.getBounds(), { padding: [16, 16] });
+  if (adatta) mappa.fitBounds(cerchioRaggio.getBounds(), { padding: [16, 16] });
 }

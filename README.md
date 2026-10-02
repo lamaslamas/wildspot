@@ -2,7 +2,7 @@
 
 Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA.
 
-> Stato: **fase 1** — mappa, posizione GPS, scelta del raggio, deploy su GitHub Pages.
+> Stato: **fase 2** — mappa, posizione GPS, raggio, osservazioni iNaturalist con filtri e schede.
 
 ## Avvio in locale
 
@@ -40,15 +40,29 @@ Se rinomini il repository, aggiorna `base` in `vite.config.js`.
 ## Struttura
 
 ```
-index.html            pagina principale
-src/main.js           avvio dell'app e stato
-src/map.js            mappa Leaflet, posizione e cerchio del raggio
-src/geolocation.js    lettura del GPS
-src/radius.js         selettore del raggio
-src/storage.js        salvataggio su localStorage
-src/style.css         stile mobile first
+index.html                 pagina principale
+src/main.js                avvio dell'app, stato e collegamenti tra i moduli
+src/map.js                 mappa Leaflet, posizione e cerchio del raggio
+src/geolocation.js         lettura del GPS
+src/radius.js              selettore del raggio
+src/inaturalist.js         chiamate all'API di iNaturalist
+src/observations-layer.js  osservazioni sulla mappa (con aree di incertezza)
+src/card.js                scheda di dettaglio di un'osservazione
+src/filters.js             filtri: periodo, gruppi, ricerca specie
+src/groups.js              gruppi di animali e colori
+src/sheet.js               pannello a scomparsa dal basso
+src/info.js                comportamento corretto e fonti dei dati
+src/cache.js               cache delle risposte delle API
+src/dom.js                 utilità (creazione elementi, debounce, distanze)
+src/storage.js             salvataggio su localStorage
+src/style.css              stile mobile first
 ```
+
+## Note sui dati
+
+- **iNaturalist**: solo osservazioni di grado "ricerca" con foto, al massimo le 200 più recenti per area. Le risposte restano in cache 10 minuti e le richieste partono solo quando smetti di muovere la mappa, per rispettare i limiti dell'API.
+- **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra come un anello tratteggiato con un'area di incertezza sfumata e non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni
 
-Mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+Mappa © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Osservazioni e foto da [iNaturalist](https://www.inaturalist.org); i diritti delle foto restano ai rispettivi autori.
