@@ -92,7 +92,7 @@ export function creaDiario({ spot, riferimento, messaggio, onApri, onNuovo, onEs
 /**
  * Scheda di uno spot.
  */
-export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onLuce, onMappa, onElimina }) {
+export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onLuce, onQuandoAndare, onMappa, onElimina }) {
   const oggi = dataIso(new Date());
   const note = CAMPI_NOTE.filter((c) => s[c]);
   return el(
@@ -140,6 +140,7 @@ export function creaSchedaSpot(s, { onVisitaOggi, onTogliVisita, onModifica, onL
         },
         t('spot.naviga'),
       ),
+      el('button', { type: 'button', class: 'btn', onclick: onQuandoAndare }, `★ ${t('andare.titolo')}`),
       el('button', { type: 'button', class: 'btn', onclick: onLuce }, t('scheda.luceMeteo')),
       el('button', { type: 'button', class: 'btn', onclick: onModifica }, t('spot.modifica')),
     ),

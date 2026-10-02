@@ -29,6 +29,7 @@ import { creaLivelloSpot } from './spots-layer.js';
 import { creaLivelloHeatmap } from './heatmap-layer.js';
 import { creaSfondi, areeNelPunto } from './basemaps.js';
 import { creaPannelloSfondi, creaSchedaAree } from './basemaps-ui.js';
+import { creaQuandoAndare } from './best-times-ui.js';
 import { dataIso } from './weather.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
@@ -345,15 +346,15 @@ function apriSchedaLuogo(luogo, opzioni) {
 // --- Luce e meteo
 let pannelloLuce = null;
 
-function apriLuce(punto) {
+function apriLuce(punto, quando) {
   if (vista === 'elenco') impostaVista('mappa'); // la direzione del sole si vede sulla mappa
-  if (pannelloAperto === 'luce' && pannelloLuce) {
+  if (pannelloAperto === 'luce' && pannelloLuce && !quando) {
     pannelloLuce.impostaPunto(punto);
   } else {
     // Chiudiamo prima il pannello precedente: la sua chiusura non deve
     // cancellare il disegno del sole appena creato
     chiudiSheet();
-    pannelloLuce = creaPannelloLuce({ punto, onSole: livelloSole.aggiorna, onSalvaSpot: nuovoSpot });
+    pannelloLuce = creaPannelloLuce({ punto, quando, onSole: livelloSole.aggiorna, onSalvaSpot: nuovoSpot, onQuandoAndare: apriQuandoAndare });
     apriPannello(
       'luce',
       t('luce.titolo'),
@@ -366,6 +367,16 @@ function apriLuce(punto) {
     );
   }
   mostraSopraAlPannello(punto, 0.55);
+}
+
+// "Quando andare": le migliori ore dorate dei prossimi giorni in un punto;
+// toccando una finestra si apre il pannello luce su quel giorno e quell'ora
+function apriQuandoAndare(punto, titolo) {
+  apriPannello(
+    'andare',
+    titolo ? `${t('andare.titolo')} · ${titolo}` : t('andare.titolo'),
+    creaQuandoAndare(punto, { onApri: (f) => apriLuce(punto, f.inizio) }),
+  );
 }
 
 // Sposta la mappa in modo che il punto stia al centro della parte non coperta dal pannello.
@@ -502,6 +513,7 @@ function apriSpot(s) {
     onTogliVisita: (data) => ricarica(togliVisita(s.id, data)),
     onModifica: () => apriModuloSpot(s),
     onLuce: () => apriLuce(s),
+    onQuandoAndare: () => apriQuandoAndare(s, s.nome),
     onMappa: vista === 'elenco' ? () => mostraSullaMappa(s, () => livelloSpot.evidenzia(s.id), () => apriSpot(s)) : null,
     onElimina: () => {
       if (!window.confirm(t('spot.confermaElimina', { nome: s.nome }))) return;

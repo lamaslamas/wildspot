@@ -68,6 +68,8 @@ src/observations-layer.js  osservazioni iNaturalist sulla mappa (con aree di inc
 src/markers.js             forme degli indicatori e raggruppamento dei punti vicini
 src/icons.js               icone SVG dei gruppi di animali e del binocolo
 src/legend.js              legenda dei simboli
+src/best-times.js          "Quando andare": punteggio delle ore dorate dei prossimi 7 giorni
+src/best-times-ui.js       pannello "Quando andare"
 src/species-stats.js       mesi e ore in cui una specie si osserva di più (iNaturalist)
 src/species-stats-ui.js    grafici "Quando vederla"
 src/basemaps.js            sfondi (stradale, topografica, satellitare) e aree protette EEA
@@ -103,6 +105,7 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Sfondi e aree protette**: pulsante **Sfondo** sulla mappa. Topografica da OpenTopoMap, satellite da Esri World Imagery. Aree protette dai servizi dell'Agenzia europea dell'ambiente (Natura 2000 e aree nazionali CDDA); con le aree accese, un tocco su un punto vuoto della mappa mostra in quali aree si trova.
 - **Quando vederla**: nelle schede, grafici dei mesi (istogramma `month_of_year` di iNaturalist) e delle ore (dall'orario locale delle ultime 200 osservazioni) entro 100 km, allargati a 300 km o al mondo se i dati sono pochi. Per le specie eBird si cerca la specie su iNaturalist dal nome scientifico.
 - **Luna**: fase, percentuale illuminata, sorgere e tramonto nel pannello Luce e meteo (SunCalc).
+- **Quando andare**: per uno spot o un punto, le ore dorate dei prossimi 7 giorni (Open-Meteo) con un giudizio da pioggia, nuvole (anche basse), vento e visibilità, più la direzione del sole.
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

@@ -2074,3 +2074,65 @@ h3:first-child {
 .elenco-avvistamenti li:has(.quando-ebird) a {
   border-bottom: none;
 }
+
+/* ---------- Quando andare ---------- */
+.elenco-andare {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.andare-giorno {
+  margin-top: 12px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  color: var(--verde-chiaro);
+}
+
+.andare-finestra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--bordo);
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.andare-finestra.top {
+  border: 2px solid var(--ocra-chiaro);
+  background: var(--ocra-tenue);
+}
+
+.andare-voto {
+  flex: none;
+  min-width: 74px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.voto-ottima { background: var(--verde); color: #fff; }
+.voto-buona { background: var(--verde-tenue); color: var(--verde-scuro); }
+.voto-discreta { background: #f3ead6; color: #7a5a12; }
+.voto-scarsa { background: #eee; color: #666; }
+
+.andare-testo {
+  display: grid;
+  min-width: 0;
+}
+
+.andare-testo small {
+  color: var(--testo-secondario);
+  font-size: 0.82rem;
+}

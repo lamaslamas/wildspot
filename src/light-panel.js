@@ -26,12 +26,13 @@ function stessoGiorno(a, b) {
  * @param {(punto) => void} [opzioni.onSalvaSpot]  salva il punto nel diario
  * @returns {{elemento: HTMLElement, impostaPunto: (punto) => void}}
  */
-export function creaPannelloLuce({ punto, onSole, onSalvaSpot }) {
+export function creaPannelloLuce({ punto, onSole, onSalvaSpot, onQuandoAndare, quando }) {
   const ora = new Date();
   const stato = {
     punto,
-    data: mezzanotte(ora),
-    minuti: ora.getHours() * 60 + ora.getMinutes(),
+    // `quando` (facoltativo): giorno e ora da mostrare, per esempio da "Quando andare"
+    data: mezzanotte(quando || ora),
+    minuti: (quando || ora).getHours() * 60 + (quando || ora).getMinutes(),
   };
 
   const formatoOra = new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit' });
@@ -267,6 +268,8 @@ export function creaPannelloLuce({ punto, onSole, onSalvaSpot }) {
       { class: 'nota' },
       t('luce.punto'), ' ', elCoordinate, '. ', t('luce.spostaPunto'),
     ),
+    onQuandoAndare &&
+      el('button', { type: 'button', class: 'btn btn-primario btn-largo', onclick: () => onQuandoAndare({ ...stato.punto }) }, `★ ${t('andare.titolo')}`),
     onSalvaSpot &&
       el('button', { type: 'button', class: 'btn btn-largo', onclick: () => onSalvaSpot({ ...stato.punto }) }, t('spot.salvaCome')),
     el(
