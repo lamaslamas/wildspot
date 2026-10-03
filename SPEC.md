@@ -73,15 +73,19 @@ Interfaccia in italiano, pensata prima di tutto per il telefono.
 ## Fase 7: percorsi escursionistici e MTB
 
 ### Percorsi da OpenStreetMap (Overpass API)
-- Ricerca dal pulsante **"Percorsi"** sulla mappa (centro della mappa) o dal **menu del tocco prolungato** ("Percorsi qui"; lo stesso menu offre "Nuovo spot qui" e "Luce e meteo qui"). Raggio selezionabile: 1, 3, 5, 10 km
-- Query Overpass (`https://overpass-api.de/api/interpreter`, con `maps.mail.ru` come server di riserva) in GET, così il service worker può salvarla per l'uso offline:
-  `[out:json][timeout:25];relation["route"~"hiking|foot|mtb|bicycle"](around:RAGGIO,LAT,LON);out geom(BBOX);`
+- Ricerca dal pulsante **"Percorsi"** sulla mappa (centro della mappa) o dal **menu del tocco prolungato** ("Percorsi qui"; lo stesso menu offre "Nuovo spot qui" e "Luce e meteo qui"). Raggio selezionabile: 1, 3, 5 km (massimo 5 km: oltre, Overpass diventa troppo lento)
+- **Fonti**, in ordine:
+  1. **in Puglia** il file `public/data/percorsi-puglia.geojson`, generato a mano con `npm run percorsi:puglia` (script `scripts/percorsi-puglia.mjs`: estratto del Sud Italia da Geofabrik, ritaglio sul confine regionale con osmium, relazioni route=hiking/foot/mtb/bicycle, geometria ricomposta in Node). Il file contiene anche il confine semplificato, usato per decidere quando leggerlo
+  2. **fuori dalla Puglia** Overpass con richieste **POST** e `[timeout:25]`, su più server sfalsati (overpass-api.de subito, maps.mail.ru dopo 6 s, overpass.kumi.systems e overpass.private.coffee dopo 12 s): vince il primo che risponde
+  3. se nessun server risponde, l'ultima risposta salvata per quella zona (IndexedDB, perché il service worker non salva le POST)
+  `[out:json][timeout:25];relation["route"~"^(hiking|foot|mtb|bicycle)$"](around:RAGGIO,LAT,LON);out geom(BBOX);`
   La geometria è ritagliata a un riquadro poco più grande del raggio per non scaricare interi percorsi regionali (senza ritaglio: circa 2 MB per 5 km)
 - Colore per tipo: trekking/a piedi rosso-arancio, MTB viola, bici blu
 - Scheda del percorso: nome o numero, tipo, lunghezza (tag `distance` se presente, altrimenti calcolata dalla geometria; se il percorso è ritagliato si indica "almeno"), partenza e arrivo, difficoltà (`cai_scale`, `sac_scale`, `mtb:scale`), segnavia disegnato da `osmc:symbol`, link alla relazione su openstreetmap.org
 - Filtro per tipo (trekking, MTB, bici): nessuna selezione = tutti
 - Avvistamenti vicini: le osservazioni iNaturalist ed eBird caricate entro 500 m dal tracciato vengono evidenziate sulla mappa ed elencate nella scheda. Le osservazioni con posizione oscurata non vengono mai considerate "sul percorso"
-- Cache dei risultati, attesa tra ricerche ravvicinate, messaggi chiari se Overpass è lento, sovraccarico o non risponde
+- Cache dei risultati, attesa tra ricerche ravvicinate, messaggi chiari se Overpass è lento, sovraccarico o non risponde, con il dettaglio di cosa è successo a ogni server
+- **Livello Waymarked Trails** (escursionismo, MTB, ciclabili) attivabile da "Sfondo": tile sovrapposte, sempre disponibili anche quando Overpass non risponde, con attribuzione
 - Attribuzione OpenStreetMap (licenza ODbL)
 
 ### Import GPX

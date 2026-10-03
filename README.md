@@ -23,6 +23,12 @@ Apri l'app pubblicata in Chrome su Android e tocca **Installa l'app** (nella pre
 
 Il service worker (generato da `vite-plugin-pwa`, configurato in `vite.config.js`) salva la struttura dell'app all'installazione e, man mano che la usi, tile delle mappe, risposte delle API e foto. Senza rete l'app si apre e mostra gli ultimi dati scaricati per le zone già viste; diario, luce e ora dorata funzionano sempre. Le icone stanno in `public/icons/` (generate dal simbolo del logo).
 
+## Percorsi della Puglia (script manuale)
+
+`npm run percorsi:puglia` genera `public/data/percorsi-puglia.geojson`, che l'app usa come fonte principale per i percorsi in Puglia (veloce, senza limiti, disponibile offline). Serve [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool` su macOS, `sudo apt install osmium-tool` su Linux).
+
+Lo script scarica l'estratto del Sud Italia da Geofabrik (in `.osm-cache/`, riusato per 7 giorni; `-- --forza` per riscaricarlo), lo ritaglia sul confine della Puglia (relazione OSM 40095), tiene le relazioni route=hiking/foot/mtb/bicycle e ricompone in Node la geometria di ogni percorso, semplificata a circa 4 m. Dopo averlo eseguito, fai commit del file generato. Se il file non c'è, l'app usa Overpass anche in Puglia.
+
 ## Build
 
 ```bash
@@ -73,7 +79,9 @@ src/trails-ui.js           pannello Percorsi, schede, segnavia e profilo altimet
 src/gpx.js                 lettura dei file GPX e statistiche (lunghezza, dislivello)
 src/tracks.js              tracce GPX salvate (IndexedDB)
 src/geo.js                 calcoli su linee (lunghezza, distanza punto-tracciato)
-src/db.js                  database IndexedDB (foto e tracce)
+src/db.js                  database IndexedDB (foto, tracce, cache dei percorsi)
+src/trails-puglia.js       percorsi della Puglia dal file GeoJSON locale
+scripts/percorsi-puglia.mjs script manuale che genera il file della Puglia
 src/follow.js              specie seguite e controllo delle nuove segnalazioni
 src/alerts-ui.js           pannello Novità (campanella)
 src/pwa.js                 service worker e installazione
@@ -122,7 +130,7 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Quando andare**: per uno spot o un punto, le ore dorate dei prossimi 7 giorni (Open-Meteo) con un giudizio da pioggia, nuvole (anche basse), vento e visibilità, più la direzione del sole.
 - **Foto e specie fotografate**: le foto degli spot stanno in IndexedDB, le specie fotografate ("L'ho fotografata" nelle schede) in `localStorage`. Il backup JSON (versione 2) contiene spot, foto (come data URL) e specie fotografate.
 - **Specie seguite e avvisi**: "Segui" nelle schede. Con l'app aperta (all'avvio, ogni 30 minuti e al ritorno sull'app) si cercano nuove osservazioni iNaturalist caricate dopo l'ultimo controllo e avvistamenti eBird recenti entro la distanza scelta nelle Impostazioni. Le novità compaiono sotto la campanella; con il permesso arriva anche una notifica. Senza un server non è possibile avvisare ad app chiusa.
-- **Percorsi (fase 7)**: pulsante **Percorsi** sulla mappa o tocco prolungato → "Percorsi qui". Query Overpass in GET (cacheabile dal service worker) con geometria ritagliata al raggio + 2 km; server principale `overpass-api.de`, riserva `maps.mail.ru`, timeout 25 s. Lunghezza dal tag `distance` o calcolata (con "almeno" se il percorso è ritagliato), difficoltà `cai_scale`/`sac_scale`/`mtb:scale`, segnavia disegnato da `osmc:symbol`. Avvistamenti entro 500 m dal tracciato evidenziati sulla mappa (escluse le posizioni oscurate). Dati © OpenStreetMap, ODbL. Percorsi e tracce sono visibili solo quando li accendi (interruttore nel pannello Percorsi, spento a ogni apertura; si accende cercando o aprendo un percorso). Linee "incamiciate" (bordo scuro e filetto bianco: trekking rosso, MTB verde petrolio, bici blu tratteggiato, tracce GPX gialle) con un'area cliccabile larga; se nel punto cliccato passano più percorsi si sceglie quale aprire. Con percorsi visibili le aree protette si attenuano.
+- **Percorsi (fase 7)**: pulsante **Percorsi** sulla mappa o tocco prolungato → "Percorsi qui", raggio fino a 5 km. In Puglia la fonte è il file locale `public/data/percorsi-puglia.geojson` (vedi sotto); altrove Overpass in POST con geometria ritagliata al raggio + 2 km, su quattro server sfalsati (overpass-api.de, maps.mail.ru, overpass.kumi.systems, overpass.private.coffee), con ripiego sull'ultima risposta salvata in IndexedDB. Se tutto fallisce, il pannello mostra cosa è successo a ogni server. In alternativa, da **Sfondo** si attivano le tile di **Waymarked Trails** (escursionismo, MTB, ciclabili), che non dipendono da Overpass. Lunghezza dal tag `distance` o calcolata (con "almeno" se il percorso è ritagliato), difficoltà `cai_scale`/`sac_scale`/`mtb:scale`, segnavia disegnato da `osmc:symbol`. Avvistamenti entro 500 m dal tracciato evidenziati sulla mappa (escluse le posizioni oscurate). Dati © OpenStreetMap, ODbL. Percorsi e tracce sono visibili solo quando li accendi (interruttore nel pannello Percorsi, spento a ogni apertura; si accende cercando o aprendo un percorso). Linee "incamiciate" (bordo scuro e filetto bianco: trekking rosso, MTB verde petrolio, bici blu tratteggiato, tracce GPX gialle) con un'area cliccabile larga; se nel punto cliccato passano più percorsi si sceglie quale aprire. Con percorsi visibili le aree protette si attenuano.
 - **Tracce GPX**: "Importa GPX" nel pannello Percorsi; lettura con `DOMParser` di `trk`/`rte`, lunghezza, dislivello (con soglia di 3 m contro il rumore del GPS), quote e profilo. Salvate in IndexedDB e incluse nel backup del diario (versione 3).
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 

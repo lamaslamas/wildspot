@@ -639,7 +639,8 @@ function apriMenuPunto(punto) {
 
 // --- Percorsi (OpenStreetMap) e tracce GPX
 const statoPercorsi = {
-  raggioKm: RAGGI_PERCORSI.includes(leggi('raggioPercorsi', 3)) ? leggi('raggioPercorsi', 3) : 3,
+  // raggio ricordato; chi aveva scelto 10 km (non più disponibile) passa a 5
+  raggioKm: RAGGI_PERCORSI.includes(leggi('raggioPercorsi', 3)) ? leggi('raggioPercorsi', 3) : leggi('raggioPercorsi', 3) > 5 ? 5 : 3,
   tipi: [],
   centro: null,
   raggioUsato: null,
@@ -775,16 +776,28 @@ async function cercaPercorsiIn(punto) {
   const controller = new AbortController();
   richiestaPercorsi = controller;
   const raggioKm = statoPercorsi.raggioKm;
-  Object.assign(statoPercorsi, { centro: punto, stato: 'carico', errore: '', visibili: true });
+  Object.assign(statoPercorsi, { centro: punto, stato: 'carico', errore: '', visibili: true, riserva: '', tentativi: [] });
 
   // cerchio leggero che mostra l'area della ricerca
   cerchioPercorsi?.remove();
   cerchioPercorsi = L.circle([punto.lat, punto.lng], { radius: raggioKm * 1000, className: 'raggio-percorsi', interactive: false }).addTo(mappa);
   apriPercorsi();
   try {
-    const percorsi = await cercaPercorsi(punto, raggioKm, controller.signal);
+    const risultato = await cercaPercorsi(punto, raggioKm, controller.signal, (server) => {
+      // il server principale non ha ancora risposto: lo diciamo
+      statoPercorsi.riserva = server;
+      if (pannelloAperto === 'percorsi') apriPercorsi();
+    });
     if (controller.signal.aborted) return;
-    Object.assign(statoPercorsi, { percorsi, stato: 'ok', raggioUsato: raggioKm });
+    Object.assign(statoPercorsi, {
+      percorsi: risultato.percorsi,
+      stato: 'ok',
+      raggioUsato: raggioKm,
+      fonte: risultato.fonte,
+      server: risultato.server || '',
+      salvato: risultato.salvato || null,
+      tentativi: risultato.errore?.tentativi || [],
+    });
     ridisegnaPercorsi();
     // inquadra l'area cercata (il punto del tocco prolungato può essere lontano dal centro)
     const b = cerchioPercorsi.getBounds();
@@ -792,6 +805,7 @@ async function cercaPercorsiIn(punto) {
   } catch (err) {
     if (controller.signal.aborted) return;
     statoPercorsi.stato = 'errore';
+    statoPercorsi.tentativi = err.tentativi || [];
     statoPercorsi.errore = !navigator.onLine
       ? 'percorsi.offline'
       : err.status === 429

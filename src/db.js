@@ -2,7 +2,7 @@
 // (localStorage è troppo piccolo per immagini e tracce)
 
 const NOME = 'wildspot';
-const VERSIONE = 2; // 1: foto · 2: + tracce GPX
+const VERSIONE = 3; // 1: foto · 2: + tracce GPX · 3: + cache dei percorsi Overpass
 
 let dbPromessa = null;
 
@@ -15,6 +15,8 @@ export function apriDb() {
         db.createObjectStore('foto', { keyPath: 'id' }).createIndex('spotId', 'spotId');
       }
       if (!db.objectStoreNames.contains('tracce')) db.createObjectStore('tracce', { keyPath: 'id' });
+      // risposte Overpass già elaborate: le richieste POST non passano dalla cache del service worker
+      if (!db.objectStoreNames.contains('cachePercorsi')) db.createObjectStore('cachePercorsi', { keyPath: 'chiave' });
     };
     richiesta.onsuccess = () => resolve(richiesta.result);
     richiesta.onerror = () => reject(richiesta.error);
@@ -28,7 +30,9 @@ export async function transazione(archivio, modo, operazione) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(archivio, modo);
     const risultato = operazione(tx.objectStore(archivio));
-    tx.oncomplete = () => resolve(risultato?.result ?? risultato);
+    // per le richieste (get, getAll…) il valore è in .result, che può essere
+    // undefined quando non c'è niente: in quel caso va restituito undefined
+    tx.oncomplete = () => resolve(risultato instanceof IDBRequest ? risultato.result : risultato);
     tx.onerror = () => reject(tx.error);
   });
 }

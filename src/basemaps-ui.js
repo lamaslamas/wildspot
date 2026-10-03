@@ -3,7 +3,7 @@
 
 import { el } from './dom.js';
 import { t } from './i18n.js';
-import { SFONDI } from './basemaps.js';
+import { SFONDI, SENTIERI_WM } from './basemaps.js';
 
 // Anteprime: una tile di esempio (zona di Narni, zoom 11) per ogni sfondo
 const ANTEPRIMA = { z: 11, x: 1095, y: 756 };
@@ -55,6 +55,31 @@ export function creaPannelloSfondi(sfondi, onCambio) {
         t('aree.mostra'),
       ),
       el('p', { class: 'nota' }, t('aree.spiega')),
+      el('h3', {}, t('wm.titolo')),
+      el(
+        'div',
+        { class: 'chips' },
+        SENTIERI_WM.map((id) => {
+          const acceso = sfondi.sentieriAccesi().includes(id);
+          return el(
+            'button',
+            {
+              type: 'button',
+              class: 'chip',
+              'aria-pressed': String(acceso),
+              onclick: () => {
+                const attuali = sfondi.sentieriAccesi();
+                sfondi.impostaSentieri(acceso ? attuali.filter((x) => x !== id) : [...attuali, id]);
+                onCambio?.();
+                disegna();
+              },
+            },
+            el('span', { class: `simbolo-wm wm-${id}` }),
+            t(`wm.${id}`),
+          );
+        }),
+      ),
+      el('p', { class: 'nota' }, t('wm.spiega')),
     );
   }
   disegna();

@@ -7,7 +7,7 @@ import { TIPI_PERCORSO, COLORI_PERCORSO } from './trails.js';
 import { COLORE_TRACCIA } from './trails-layer.js';
 import { htmlOsservazione, htmlLuogoEbird, iconaPiccola } from './markers.js';
 
-export const RAGGI_PERCORSI = [1, 3, 5, 10];
+export const RAGGI_PERCORSI = [1, 3, 5]; // oltre i 5 km Overpass diventa troppo lento
 
 const numero = (n, cifre = 1) => new Intl.NumberFormat(locale(), { maximumFractionDigits: cifre }).format(n);
 
@@ -108,9 +108,27 @@ export function creaPannelloPercorsi(s, azioni) {
 
   const visibili = s.percorsi.filter((p) => !s.tipi.length || s.tipi.includes(p.tipo));
   let statoTesto = '';
-  if (s.stato === 'carico') statoTesto = t('percorsi.carico');
+  if (s.stato === 'carico') statoTesto = s.riserva ? t('percorsi.riserva', { server: s.riserva }) : t('percorsi.carico');
   else if (s.stato === 'errore') statoTesto = t(s.errore);
   else if (s.stato === 'ok') statoTesto = visibili.length ? t('percorsi.trovati', { n: visibili.length, km: s.raggioUsato }) : t('percorsi.nessuno', { km: s.raggioUsato });
+
+  // da dove arrivano i dati, e cosa è successo ai server se qualcosa è andato storto
+  const fonte =
+    s.stato !== 'ok'
+      ? ''
+      : s.fonte === 'puglia'
+        ? t('percorsi.fontePuglia')
+        : s.fonte === 'cache'
+          ? t('percorsi.fonteCache', { data: new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(s.salvato) })
+          : t('percorsi.fonteOverpass', { server: s.server });
+  const dettaglio = s.tentativi?.length
+    ? el(
+        'details',
+        { class: 'dettaglio-server' },
+        el('summary', {}, t('percorsi.dettaglio')),
+        el('ul', {}, s.tentativi.map((x) => el('li', {}, `${x.server}: ${x.motivo}`))),
+      )
+    : null;
 
   const haQualcosa = s.percorsi.length > 0 || s.tracceVisibili.some((id) => s.tracce.some((tr) => tr.id === id));
   return el(
@@ -156,7 +174,9 @@ export function creaPannelloPercorsi(s, azioni) {
       s.stato === 'carico' ? t('percorsi.carico') : t('percorsi.cercaQui'),
     ),
     el('p', { class: 'nota' }, t('percorsi.suggerimento')),
-    statoTesto && el('p', { class: `esito${s.stato === 'errore' ? '' : ''}`, role: 'status', 'data-tipo': s.stato === 'errore' ? 'errore' : 'info' }, statoTesto),
+    statoTesto && el('p', { class: 'esito', role: 'status', 'data-tipo': s.stato === 'errore' ? 'errore' : 'info' }, statoTesto),
+    fonte && el('p', { class: 'nota' }, fonte),
+    dettaglio,
     visibili.length > 0 &&
       el(
         'ul',

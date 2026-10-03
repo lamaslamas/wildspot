@@ -2469,3 +2469,27 @@ button[hidden] {
 .leaflet-container path.leaflet-interactive:focus:not(:focus-visible) {
   outline: none;
 }
+
+.dettaglio-server {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--testo-secondario);
+}
+
+.dettaglio-server ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.simbolo-wm {
+  flex: none;
+  width: 20px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.wm-hiking { background: #e03131; }
+.wm-mtb { background: #a5672b; }
+.wm-cycling { background: #7048e8; }

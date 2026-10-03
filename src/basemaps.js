@@ -26,6 +26,11 @@ export const SFONDI = {
   },
 };
 
+// Sentieri segnati di Waymarked Trails: immagini sovrapposte alla mappa,
+// sempre disponibili anche quando Overpass non risponde (ma non cliccabili)
+export const SENTIERI_WM = ['hiking', 'mtb', 'cycling'];
+const ATTRIBUZIONE_WM = 'Sentieri &copy; <a href="https://waymarkedtrails.org">Waymarked Trails</a> (CC BY-SA), dati OSM';
+
 const EEA = 'https://bio.discomap.eea.europa.eu/arcgis';
 const SERVIZI_AREE = {
   natura2000: 'ProtectedSites/Natura2000Sites/MapServer',
@@ -50,6 +55,30 @@ export function creaSfondi(mappa) {
     }),
   ]);
 
+  // Waymarked Trails: sopra le aree, sotto i percorsi cliccabili
+  mappa.createPane('waymarked').style.zIndex = 330;
+  const livelliWm = Object.fromEntries(
+    SENTIERI_WM.map((id) => [
+      id,
+      L.tileLayer(`https://tile.waymarkedtrails.org/${id}/{z}/{x}/{y}.png`, {
+        pane: 'waymarked',
+        maxZoom: 18,
+        opacity: 0.85,
+        attribution: ATTRIBUZIONE_WM,
+      }),
+    ]),
+  );
+  let sentieriAccesi = leggi('sentieriWm', []).filter((id) => SENTIERI_WM.includes(id));
+
+  function impostaSentieri(elenco) {
+    sentieriAccesi = elenco.filter((id) => SENTIERI_WM.includes(id));
+    scrivi('sentieriWm', sentieriAccesi);
+    for (const [id, livello] of Object.entries(livelliWm)) {
+      if (sentieriAccesi.includes(id)) livello.addTo(mappa);
+      else livello.remove();
+    }
+  }
+
   function impostaSfondo(id) {
     sfondo = SFONDI[id] ? id : 'stradale';
     scrivi('sfondo', sfondo);
@@ -73,11 +102,14 @@ export function creaSfondi(mappa) {
 
   impostaSfondo(sfondo);
   impostaAree(areeAccese);
+  impostaSentieri(sentieriAccesi);
 
   return {
     impostaSfondo,
     impostaAree,
     attenuaAree,
+    impostaSentieri,
+    sentieriAccesi: () => sentieriAccesi,
     sfondo: () => sfondo,
     areeAccese: () => areeAccese,
   };

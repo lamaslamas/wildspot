@@ -1,24 +1,33 @@
-// Percorsi escursionistici, MTB e bici da OpenStreetMap tramite Overpass API.
+// Percorsi escursionistici, MTB e bici da OpenStreetMap.
 // Dati © OpenStreetMap contributors, licenza ODbL.
 //
-// Overpass è un servizio gratuito con limiti: usiamo richieste GET (così il
-// service worker le può salvare per l'uso offline), una cache in memoria e un
-// server di riserva se il principale è sovraccarico.
+// Fonti, in ordine:
+// 1. in Puglia, il file preparato in anticipo public/data/percorsi-puglia.geojson
+//    (vedi scripts/percorsi-puglia.mjs): niente richieste a server esterni
+// 2. fuori dalla Puglia, Overpass API con richieste POST a più server: il
+//    principale parte subito, le riserve partono sfalsate se non risponde,
+//    vince il primo che risponde e gli altri vengono annullati
+// 3. se nessun server risponde, l'ultima risposta salvata per quella zona (IndexedDB)
 
 import { lunghezzaTotaleKm } from './geo.js';
+import { transazione } from './db.js';
+import { percorsiPuglia } from './trails-puglia.js';
 
+// [indirizzo, dopo quanti ms partire, tempo massimo di attesa in ms]
 const SERVER = [
-  'https://overpass-api.de/api/interpreter',
-  'https://maps.mail.ru/osm/tools/overpass/api/interpreter', // riserva: più lento ma affidabile
+  ['https://overpass-api.de/api/interpreter', 0, 25000],
+  ['https://maps.mail.ru/osm/tools/overpass/api/interpreter', 6000, 25000], // lento ma affidabile
+  ['https://overpass.kumi.systems/api/interpreter', 12000, 15000],
+  ['https://overpass.private.coffee/api/interpreter', 12000, 15000],
 ];
-const TIMEOUT_MS = 25000;
 const MARGINE_KM = 2; // la geometria è ritagliata al raggio + questo margine
+const CACHE_FRESCA_MS = 7 * 24 * 3600 * 1000; // entro una settimana la cache vale come una risposta nuova
 
 export const TIPI_PERCORSO = ['trekking', 'mtb', 'bici'];
 // Colori scelti per non confondersi con le aree protette (viola, magenta, arancio)
 export const COLORI_PERCORSO = { trekking: '#c92a2a', mtb: '#0b7285', bici: '#1864ab' };
 
-const cache = new Map(); // chiave -> percorsi
+const cache = new Map(); // chiave -> risultato (in memoria, per la sessione)
 
 function tipoDaRoute(route) {
   if (route === 'mtb') return 'mtb';
@@ -65,7 +74,7 @@ function riquadroAttorno({ lat, lng }, km) {
 function normalizza(rel) {
   const tags = rel.tags || {};
   const tratti = [];
-  let ritagliato = false;
+  let ritagliato = Boolean(rel.ritagliato);
   for (const m of rel.members || []) {
     if (m.type !== 'way') continue;
     if (!m.geometry) {
@@ -107,12 +116,20 @@ function normalizza(rel) {
   };
 }
 
-async function chiedi(server, query, signal) {
+const nomeServer = (url) => new URL(url).hostname;
+
+// Una richiesta POST a un server, con tempo massimo; l'errore dice cosa è successo
+async function chiedi(server, query, attesaMax, segnale) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  signal?.addEventListener('abort', () => controller.abort());
+  const timer = setTimeout(() => controller.abort('tempo'), attesaMax);
+  const annulla = () => controller.abort('annullata');
+  segnale.addEventListener('abort', annulla);
   try {
-    const r = await fetch(`${server}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
+    const r = await fetch(server, {
+      method: 'POST',
+      body: new URLSearchParams({ data: query }),
+      signal: controller.signal,
+    });
     if (!r.ok) {
       const e = new Error(`HTTP ${r.status}`);
       e.status = r.status;
@@ -120,40 +137,134 @@ async function chiedi(server, query, signal) {
     }
     return await r.json();
   } catch (err) {
-    if (signal?.aborted) throw err; // annullata da noi
-    if (err.name === 'AbortError') err.lento = true; // scaduto il tempo
+    if (controller.signal.aborted && controller.signal.reason === 'tempo') {
+      const e = new Error(`nessuna risposta in ${Math.round(attesaMax / 1000)} s`);
+      e.lento = true;
+      throw e;
+    }
     throw err;
   } finally {
     clearTimeout(timer);
+    segnale.removeEventListener('abort', annulla);
+  }
+}
+
+// Server sfalsati: vince il primo che risponde, gli altri vengono annullati
+function chiediAiServer(query, signal, onProgresso) {
+  const tutti = new AbortController();
+  signal?.addEventListener('abort', () => tutti.abort());
+  const tentativi = [];
+  const prove = SERVER.map(([url, ritardo, attesaMax]) =>
+    new Promise((resolve, reject) => {
+      const avvio = setTimeout(async () => {
+        if (tutti.signal.aborted) return reject(new Error('annullata'));
+        if (ritardo) onProgresso?.(nomeServer(url));
+        try {
+          resolve({ dati: await chiedi(url, query, attesaMax, tutti.signal), server: nomeServer(url) });
+        } catch (err) {
+          tentativi.push({ server: nomeServer(url), motivo: err.message, status: err.status, lento: err.lento });
+          reject(err);
+        }
+      }, ritardo);
+      tutti.signal.addEventListener('abort', () => clearTimeout(avvio));
+    }),
+  );
+  return Promise.any(prove)
+    .then((risultato) => {
+      tutti.abort(); // ferma le richieste ancora in corso
+      return risultato;
+    })
+    .catch(() => {
+      const e = new Error('Nessun server Overpass ha risposto');
+      e.tentativi = tentativi;
+      e.lento = tentativi.some((t) => t.lento || t.status === 504);
+      e.status = tentativi.find((t) => t.status === 429)?.status;
+      throw e;
+    });
+}
+
+// --- Cache su IndexedDB (le richieste POST non passano dal service worker)
+async function leggiCache(chiave) {
+  try {
+    return await transazione('cachePercorsi', 'readonly', (s) => s.get(chiave));
+  } catch {
+    return null;
+  }
+}
+
+async function scriviCache(chiave, percorsi) {
+  try {
+    await transazione('cachePercorsi', 'readwrite', (s) => s.put({ chiave, percorsi, salvato: Date.now() }));
+    // al massimo 40 zone salvate: togliamo le più vecchie
+    const tutte = await transazione('cachePercorsi', 'readonly', (s) => s.getAll());
+    if (tutte.length > 40) {
+      const vecchie = tutte.sort((a, b) => a.salvato - b.salvato).slice(0, tutte.length - 40);
+      await transazione('cachePercorsi', 'readwrite', (s) => vecchie.forEach((v) => s.delete(v.chiave)));
+    }
+  } catch {
+    // la cache non è indispensabile
   }
 }
 
 /**
  * Percorsi entro `raggioKm` da un punto.
- * Errori: `err.lento` (nessuna risposta in tempo), `err.status` 429 (troppe richieste).
+ * @param {(server: string) => void} [onProgresso] avvisa quando si prova un server di riserva
+ * @returns {Promise<{percorsi: object[], fonte: 'puglia'|'overpass'|'cache', server?: string, salvato?: number}>}
+ * Errori: `err.lento` (nessuna risposta in tempo), `err.status` 429, `err.tentativi` (dettaglio per server)
  */
-export async function cercaPercorsi({ lat, lng }, raggioKm, signal) {
+export async function cercaPercorsi({ lat, lng }, raggioKm, signal, onProgresso) {
   const chiave = `${lat.toFixed(3)},${lng.toFixed(3)},${raggioKm}`;
   if (cache.has(chiave)) return cache.get(chiave);
 
+  // 1. Puglia: file locale (null se il punto è fuori o il file non c'è)
+  const locali = await percorsiPuglia({ lat, lng }, raggioKm, MARGINE_KM).catch(() => null);
+  if (locali) {
+    const risultato = { percorsi: locali.map(normalizzaFeature).filter(Boolean), fonte: 'puglia' };
+    cache.set(chiave, risultato);
+    return risultato;
+  }
+
+  // 2. Cache recente
+  const salvata = await leggiCache(chiave);
+  if (salvata && Date.now() - salvata.salvato < CACHE_FRESCA_MS) {
+    return { percorsi: salvata.percorsi, fonte: 'cache', salvato: salvata.salvato };
+  }
+
+  // 3. Overpass
   const bb = riquadroAttorno({ lat, lng }, raggioKm + MARGINE_KM).map((v) => v.toFixed(4)).join(',');
   const query =
     `[out:json][timeout:25];` +
     `relation["route"~"^(hiking|foot|mtb|bicycle)$"](around:${raggioKm * 1000},${lat.toFixed(5)},${lng.toFixed(5)});` +
     `out geom(${bb});`;
-
-  let ultimoErrore;
-  for (const server of SERVER) {
-    try {
-      const dati = await chiedi(server, query, signal);
-      const percorsi = (dati.elements || []).map(normalizza).filter(Boolean);
-      cache.set(chiave, percorsi);
-      if (cache.size > 20) cache.delete(cache.keys().next().value);
-      return percorsi;
-    } catch (err) {
-      if (signal?.aborted) throw err;
-      ultimoErrore = err; // proviamo il server successivo
-    }
+  try {
+    const { dati, server } = await chiediAiServer(query, signal, onProgresso);
+    const percorsi = (dati.elements || []).map(normalizza).filter(Boolean);
+    const risultato = { percorsi, fonte: 'overpass', server };
+    cache.set(chiave, risultato);
+    if (cache.size > 20) cache.delete(cache.keys().next().value);
+    scriviCache(chiave, percorsi);
+    return risultato;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    // 4. nessuna risposta: meglio i dati vecchi che niente
+    if (salvata) return { percorsi: salvata.percorsi, fonte: 'cache', salvato: salvata.salvato, errore: err };
+    throw err;
   }
-  throw ultimoErrore;
+}
+
+// --- Percorsi dal file GeoJSON della Puglia (stesso formato di normalizza)
+function normalizzaFeature(f) {
+  const g = f.geometry;
+  if (!g) return null;
+  const linee = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
+  const tratti = linee.map((l) => l.map(([lng, lat]) => [lat, lng])).filter((l) => l.length > 1);
+  if (!tratti.length) return null;
+  const tags = f.properties || {};
+  return normalizza({
+    id: tags.id,
+    tags,
+    // riusiamo normalizza() passando i tratti come membri già "ritagliati"
+    members: tratti.map((t) => ({ type: 'way', geometry: t.map(([lat, lon]) => ({ lat, lon })) })),
+    ritagliato: Boolean(f.ritagliato),
+  });
 }

@@ -50,7 +50,7 @@ export default defineConfig({
           },
           {
             // Heatmap e aree protette (immagini a tile)
-            urlPattern: /^https:\/\/(api\.inaturalist\.org\/v1\/heatmap|bio\.discomap\.eea\.europa\.eu)\//,
+            urlPattern: /^https:\/\/(api\.inaturalist\.org\/v1\/heatmap|bio\.discomap\.eea\.europa\.eu|tile\.waymarkedtrails\.org)\//,
             handler: 'CacheFirst',
             options: {
               cacheName: 'tile-livelli',
@@ -70,15 +70,10 @@ export default defineConfig({
             },
           },
           {
-            // Percorsi da Overpass: risposta lenta, quindi attesa lunga prima di usare la copia salvata
-            urlPattern: /^https:\/\/(overpass-api\.de|maps\.mail\.ru\/osm\/tools\/overpass)\/api\/interpreter/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'percorsi',
-              networkTimeoutSeconds: 30,
-              expiration: { maxEntries: 40, maxAgeSeconds: 30 * GIORNO },
-              cacheableResponse: { statuses: [200] },
-            },
+            // Archivio dei percorsi della Puglia: si aggiorna in rete se possibile, altrimenti la copia salvata
+            urlPattern: /\/data\/percorsi-puglia\.geojson$/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'archivio-percorsi', expiration: { maxEntries: 2 } },
           },
           {
             // Foto delle osservazioni
