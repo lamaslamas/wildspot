@@ -15,7 +15,8 @@ const TIMEOUT_MS = 25000;
 const MARGINE_KM = 2; // la geometria è ritagliata al raggio + questo margine
 
 export const TIPI_PERCORSO = ['trekking', 'mtb', 'bici'];
-export const COLORI_PERCORSO = { trekking: '#d9480f', mtb: '#7b2cbf', bici: '#1c7ed6' };
+// Colori scelti per non confondersi con le aree protette (viola, magenta, arancio)
+export const COLORI_PERCORSO = { trekking: '#c92a2a', mtb: '#0b7285', bici: '#1864ab' };
 
 const cache = new Map(); // chiave -> percorsi
 

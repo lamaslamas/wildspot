@@ -222,6 +222,12 @@ const TESTI = {
 
     // Percorsi e tracce GPX
     'percorsi.pulsante': 'Percorsi',
+    'percorsi.quale': 'Quale percorso?',
+    'percorsi.visibiliSi': 'Percorsi e tracce visibili sulla mappa',
+    'percorsi.visibiliNo': 'Percorsi e tracce nascosti',
+    'percorsi.visibiliNota': 'Tocca per mostrarli o nasconderli. A ogni apertura dell\'app partono nascosti.',
+    'percorsi.visibiliVuoto': 'Cerca dei percorsi o importa una traccia GPX per vederli sulla mappa.',
+    'gpx.traccia': 'La tua traccia GPX',
     'percorsi.titolo': 'Percorsi e tracce',
     'percorsi.cerca': 'Percorsi da OpenStreetMap',
     'percorsi.raggio': 'Raggio della ricerca',
@@ -236,7 +242,6 @@ const TESTI = {
     'percorsi.errore': 'Percorsi non disponibili: Overpass non risponde.',
     'percorsi.offline': 'Sei offline: i percorsi non sono disponibili per questa zona.',
     'percorsi.tuttiITipi': 'Nessun tipo scelto: vedi tutti i percorsi.',
-    'percorsi.nascondi': 'Nascondi i percorsi',
     'percorsi.tipo.trekking': 'Trekking',
     'percorsi.tipo.mtb': 'MTB',
     'percorsi.tipo.bici': 'Bici',
@@ -282,7 +287,7 @@ const TESTI = {
     'menu.titolo': 'Questo punto',
     'menu.nuovoSpot': 'Nuovo spot qui',
     'legenda.percorsi': 'Percorsi',
-    'legenda.percorsiSpiega': 'Rosso-arancio trekking, viola MTB, blu tratteggiato bici. Il tratto nero è una tua traccia GPX.',
+    'legenda.percorsiSpiega': 'Rosso trekking, verde petrolio MTB, blu tratteggiato bici, giallo le tue tracce GPX. Si vedono solo quando li accendi dal pannello Percorsi.',
     'info.fontePercorsi': 'Percorsi da {link} tramite Overpass API (licenza ODbL)',
 
     // Specie seguite
@@ -675,6 +680,12 @@ const TESTI = {
     'legenda.posizione': 'Your location',
 
     'percorsi.pulsante': 'Trails',
+    'percorsi.quale': 'Which trail?',
+    'percorsi.visibiliSi': 'Trails and tracks shown on the map',
+    'percorsi.visibiliNo': 'Trails and tracks hidden',
+    'percorsi.visibiliNota': 'Tap to show or hide them. They start hidden every time you open the app.',
+    'percorsi.visibiliVuoto': 'Search for trails or import a GPX track to see them on the map.',
+    'gpx.traccia': 'Your GPX track',
     'percorsi.titolo': 'Trails and tracks',
     'percorsi.cerca': 'Trails from OpenStreetMap',
     'percorsi.raggio': 'Search radius',
@@ -689,7 +700,6 @@ const TESTI = {
     'percorsi.errore': 'Trails unavailable: Overpass is not responding.',
     'percorsi.offline': 'You are offline: trails are not available for this area.',
     'percorsi.tuttiITipi': 'No type chosen: showing all trails.',
-    'percorsi.nascondi': 'Hide trails',
     'percorsi.tipo.trekking': 'Hiking',
     'percorsi.tipo.mtb': 'MTB',
     'percorsi.tipo.bici': 'Cycling',
@@ -735,7 +745,7 @@ const TESTI = {
     'menu.titolo': 'This point',
     'menu.nuovoSpot': 'New spot here',
     'legenda.percorsi': 'Trails',
-    'legenda.percorsiSpiega': 'Red-orange hiking, purple MTB, dashed blue cycling. The black line is one of your GPX tracks.',
+    'legenda.percorsiSpiega': 'Red hiking, petrol green MTB, dashed blue cycling, yellow your GPX tracks. They only show when you turn them on from the Trails panel.',
     'info.fontePercorsi': 'Trails from {link} via Overpass API (ODbL licence)',
 
     'aria.novita': 'News about the species you follow',

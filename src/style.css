@@ -2349,7 +2349,8 @@ button[hidden] {
 }
 
 .linea-tipo.traccia {
-  background: #212529;
+  background: var(--c, #ffd43b);
+  box-shadow: 0 0 0 1px #1a1a1a, 0 0 0 3px #fff;
 }
 
 .segnavia-contenitore {
@@ -2437,4 +2438,34 @@ button[hidden] {
 
 .legenda-linee i.tratt {
   background: repeating-linear-gradient(90deg, var(--c) 0 3px, transparent 3px 8px);
+}
+
+/* Linee dei percorsi: puntatore a manina e suggerimento col nome (desktop) */
+.linea-tocco {
+  cursor: pointer;
+}
+
+.suggerimento-percorso {
+  font-weight: 700;
+}
+
+.suggerimento-percorso:empty {
+  display: none;
+}
+
+/* Pulsante "Percorsi" quando percorsi e tracce sono visibili sulla mappa */
+.legenda-btn.attivo {
+  background: var(--verde);
+  color: #fff;
+  border-color: var(--verde);
+}
+
+.chip-largo {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Niente riquadro di focus del browser sulle linee cliccate col mouse */
+.leaflet-container path.leaflet-interactive:focus:not(:focus-visible) {
+  outline: none;
 }

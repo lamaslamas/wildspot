@@ -36,7 +36,7 @@ import { creaPannelloSfondi, creaSchedaAree } from './basemaps-ui.js';
 import { creaQuandoAndare } from './best-times-ui.js';
 import { cercaPercorsi } from './trails.js';
 import { creaLivelloPercorsi } from './trails-layer.js';
-import { creaPannelloPercorsi, creaSchedaPercorso, creaSchedaTraccia, creaMenuPunto, RAGGI_PERCORSI } from './trails-ui.js';
+import { creaPannelloPercorsi, creaSchedaPercorso, creaSchedaTraccia, creaMenuPunto, creaSceltaPercorso, RAGGI_PERCORSI } from './trails-ui.js';
 import { importaTraccia, leggiTracce, rinominaTraccia, eliminaTraccia } from './tracks.js';
 import { distanzaDaTrattiM } from './geo.js';
 import { dataIso } from './weather.js';
@@ -121,7 +121,11 @@ const livelloSole = creaLivelloSole(mappa);
 const livelloHeatmap = creaLivelloHeatmap(mappa);
 const sfondi = creaSfondi(mappa);
 const livelloSpot = creaLivelloSpot(mappa, apriSpot);
-const livelloPercorsi = creaLivelloPercorsi(mappa, { onPercorso: (p) => apriPercorso(p), onTraccia: (tr) => apriTraccia(tr) });
+const livelloPercorsi = creaLivelloPercorsi(mappa, {
+  onPercorso: (p) => apriPercorso(p),
+  onTraccia: (tr) => apriTraccia(tr),
+  onScelta: (elenco) => apriSceltaPercorso(elenco),
+});
 
 // Toccando un punto vuoto della mappa: con il pannello luce o il modulo di uno
 // spot aperti si sposta il punto; altrimenti si chiude il pannello aperto
@@ -644,6 +648,9 @@ const statoPercorsi = {
   errore: '',
   tracce: [],
   tracceVisibili: leggi('tracceVisibili', []),
+  // percorsi e tracce sulla mappa solo quando li vuoi: spento a ogni apertura,
+  // si accende cercando percorsi, aprendone uno o con l'interruttore del pannello
+  visibili: false,
   messaggioGpx: null,
 };
 let richiestaPercorsi = null;
@@ -655,11 +662,30 @@ function percorsiVisibili() {
 }
 
 function ridisegnaPercorsi() {
-  if (statoPercorsi.percorsi.length) livelloPercorsi.mostraPercorsi(percorsiVisibili());
-  else livelloPercorsi.nascondiPercorsi();
-  livelloPercorsi.mostraTracce(statoPercorsi.tracce.filter((tr) => statoPercorsi.tracceVisibili.includes(tr.id)));
+  const { visibili } = statoPercorsi;
+  const percorsi = visibili ? percorsiVisibili() : [];
+  const tracce = visibili ? statoPercorsi.tracce.filter((tr) => statoPercorsi.tracceVisibili.includes(tr.id)) : [];
+  livelloPercorsi.mostra(percorsi, tracce);
+  if (!visibili) cerchioPercorsi?.remove();
+  else if (cerchioPercorsi && !mappa.hasLayer(cerchioPercorsi)) cerchioPercorsi.addTo(mappa);
+  sfondi.attenuaAree(visibili && (percorsi.length > 0 || tracce.length > 0));
+  document.getElementById('trails').classList.toggle('attivo', visibili);
   mappa.attributionControl.removeAttribution(ATTRIBUZIONE_PERCORSI);
-  if (statoPercorsi.percorsi.length) mappa.attributionControl.addAttribution(ATTRIBUZIONE_PERCORSI);
+  if (percorsi.length) mappa.attributionControl.addAttribution(ATTRIBUZIONE_PERCORSI);
+}
+
+function mostraPercorsiSullaMappa(si) {
+  if (statoPercorsi.visibili === si) return;
+  statoPercorsi.visibili = si;
+  ridisegnaPercorsi();
+}
+
+// Più percorsi nel punto cliccato: si sceglie quale aprire
+function apriSceltaPercorso(elenco) {
+  apriPannello('sceltaPercorso', t('percorsi.quale'), creaSceltaPercorso(elenco, {
+    onPercorso: (p) => apriPercorso(p),
+    onTraccia: (tr) => apriTraccia(tr),
+  }));
 }
 
 async function caricaTracce() {
@@ -695,12 +721,8 @@ function apriPercorsi() {
         cercaPercorsiIn({ lat: c.lat, lng: c.lng });
       },
       onApriPercorso: (p) => apriPercorso(p, { inquadra: true }),
-      onNascondi: () => {
-        richiestaPercorsi?.abort();
-        Object.assign(statoPercorsi, { percorsi: [], stato: 'vuoto', centro: null });
-        cerchioPercorsi?.remove();
-        cerchioPercorsi = null;
-        ridisegnaPercorsi();
+      onVisibili: () => {
+        mostraPercorsiSullaMappa(!statoPercorsi.visibili);
         apriPercorsi();
       },
       onImportaGpx: async (file) => {
@@ -714,7 +736,10 @@ function apriPercorsi() {
             // continua con gli altri file
           }
         }
-        if (ultima) statoPercorsi.tracceVisibili = [...new Set([...statoPercorsi.tracceVisibili, ultima.id])];
+        if (ultima) {
+          statoPercorsi.tracceVisibili = [...new Set([...statoPercorsi.tracceVisibili, ultima.id])];
+          statoPercorsi.visibili = true;
+        }
         scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
         statoPercorsi.messaggioGpx =
           ok === file.length
@@ -729,6 +754,7 @@ function apriPercorsi() {
         const v = statoPercorsi.tracceVisibili;
         statoPercorsi.tracceVisibili = v.includes(tr.id) ? v.filter((id) => id !== tr.id) : [...v, tr.id];
         scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
+        if (statoPercorsi.tracceVisibili.includes(tr.id)) statoPercorsi.visibili = true; // l'hai chiesta: va vista
         ridisegnaPercorsi();
         apriPercorsi();
       },
@@ -749,7 +775,7 @@ async function cercaPercorsiIn(punto) {
   const controller = new AbortController();
   richiestaPercorsi = controller;
   const raggioKm = statoPercorsi.raggioKm;
-  Object.assign(statoPercorsi, { centro: punto, stato: 'carico', errore: '' });
+  Object.assign(statoPercorsi, { centro: punto, stato: 'carico', errore: '', visibili: true });
 
   // cerchio leggero che mostra l'area della ricerca
   cerchioPercorsi?.remove();
@@ -839,6 +865,7 @@ function apriPercorso(p, { inquadra = false } = {}) {
     onInquadra: () => inquadraTratti(p.tratti),
   });
   const titolo = p.nome || (p.ref ? `${t('percorsi.sentiero')} ${p.ref}` : t(`percorsi.tipo.${p.tipo}`));
+  mostraPercorsiSullaMappa(true);
   apriPannello('percorso', titolo, scheda, chiudiTracciato);
   livelloPercorsi.seleziona(`p-${p.id}`);
   evidenziaVicini(vicini);
@@ -847,9 +874,10 @@ function apriPercorso(p, { inquadra = false } = {}) {
 
 function apriTraccia(tr, { inquadra = false } = {}) {
   // una traccia aperta dall'elenco va mostrata anche se era nascosta
-  if (!statoPercorsi.tracceVisibili.includes(tr.id)) {
-    statoPercorsi.tracceVisibili = [...statoPercorsi.tracceVisibili, tr.id];
+  if (!statoPercorsi.tracceVisibili.includes(tr.id) || !statoPercorsi.visibili) {
+    statoPercorsi.tracceVisibili = [...new Set([...statoPercorsi.tracceVisibili, tr.id])];
     scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
+    statoPercorsi.visibili = true;
     ridisegnaPercorsi();
   }
   const vicini = avvistamentiVicini(tr.tratti);

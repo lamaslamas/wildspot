@@ -4,6 +4,7 @@
 import { el } from './dom.js';
 import { t, locale } from './i18n.js';
 import { TIPI_PERCORSO, COLORI_PERCORSO } from './trails.js';
+import { COLORE_TRACCIA } from './trails-layer.js';
 import { htmlOsservazione, htmlLuogoEbird, iconaPiccola } from './markers.js';
 
 export const RAGGI_PERCORSI = [1, 3, 5, 10];
@@ -111,9 +112,23 @@ export function creaPannelloPercorsi(s, azioni) {
   else if (s.stato === 'errore') statoTesto = t(s.errore);
   else if (s.stato === 'ok') statoTesto = visibili.length ? t('percorsi.trovati', { n: visibili.length, km: s.raggioUsato }) : t('percorsi.nessuno', { km: s.raggioUsato });
 
+  const haQualcosa = s.percorsi.length > 0 || s.tracceVisibili.some((id) => s.tracce.some((tr) => tr.id === id));
   return el(
     'div',
     { class: 'percorsi' },
+    // Interruttore generale: percorsi e tracce si vedono solo quando lo vuoi
+    el(
+      'button',
+      {
+        type: 'button',
+        class: 'chip chip-largo',
+        'aria-pressed': String(s.visibili),
+        disabled: !haQualcosa && !s.visibili,
+        onclick: azioni.onVisibili,
+      },
+      s.visibili ? `👁 ${t('percorsi.visibiliSi')}` : `🚫 ${t('percorsi.visibiliNo')}`,
+    ),
+    el('p', { class: 'nota' }, t(haQualcosa ? 'percorsi.visibiliNota' : 'percorsi.visibiliVuoto')),
     el('h3', {}, t('percorsi.cerca')),
     el(
       'div',
@@ -167,7 +182,6 @@ export function creaPannelloPercorsi(s, azioni) {
             ),
           ),
       ),
-    s.percorsi.length > 0 && el('button', { type: 'button', class: 'btn btn-largo', onclick: azioni.onNascondi }, t('percorsi.nascondi')),
 
     el('h3', {}, t('gpx.titolo')),
     el('p', { class: 'nota' }, t('gpx.spiega')),
@@ -185,7 +199,7 @@ export function creaPannelloPercorsi(s, azioni) {
               el(
                 'button',
                 { type: 'button', class: 'voce', onclick: () => azioni.onApriTraccia(tr) },
-                el('span', { class: 'linea-tipo grande traccia' }),
+                el('span', { class: 'linea-tipo grande traccia', style: `--c:${COLORE_TRACCIA}` }),
                 el(
                   'span',
                   { class: 'voce-testo' },
@@ -329,6 +343,35 @@ export function creaSchedaTraccia(tr, { vicini, onInquadra, onRinomina, onElimin
     ),
     el('p', { class: 'nota' }, t('gpx.privata')),
     el('button', { type: 'button', class: 'link-btn link-pericolo', onclick: onElimina }, t('gpx.elimina')),
+  );
+}
+
+// Più percorsi nello stesso punto: elenco per scegliere quale aprire
+export function creaSceltaPercorso(elenco, { onPercorso, onTraccia }) {
+  return el(
+    'ul',
+    { class: 'elenco-percorsi' },
+    elenco.map(({ dati, tipo }) =>
+      el(
+        'li',
+        {},
+        el(
+          'button',
+          { type: 'button', class: 'voce', onclick: () => (tipo === 'traccia' ? onTraccia(dati) : onPercorso(dati)) },
+          tipo === 'traccia'
+            ? el('span', { class: 'linea-tipo grande traccia', style: `--c:${COLORE_TRACCIA}` })
+            : dati.simbolo && svgSegnavia(dati.simbolo)
+              ? conHtml(svgSegnavia(dati.simbolo, 30))
+              : el('span', { class: 'linea-tipo grande', style: `--c:${COLORI_PERCORSO[dati.tipo]}` }),
+          el(
+            'span',
+            { class: 'voce-testo' },
+            el('b', {}, tipo === 'traccia' ? dati.nome : titoloPercorso(dati)),
+            el('small', {}, tipo === 'traccia' ? t('gpx.traccia') : [t(`percorsi.tipo.${dati.tipo}`), testoLunghezza(dati), testoDifficolta(dati.difficolta)].filter(Boolean).join(' · ')),
+          ),
+        ),
+      ),
+    ),
   );
 }
 

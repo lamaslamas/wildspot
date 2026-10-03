@@ -42,10 +42,10 @@ export function creaSfondi(mappa) {
   mappa.createPane('aree').style.zIndex = 320;
   const aree = L.layerGroup([
     L.tileLayer.wms(`${EEA}/services/${SERVIZI_AREE.nazionali}/WMSServer`, {
-      pane: 'aree', layers: '1', format: 'image/png', transparent: true, version: '1.3.0', opacity: 0.6,
+      pane: 'aree', layers: '1', format: 'image/png', transparent: true, version: '1.3.0', opacity: 0.6, opacitaPiena: 0.6,
     }),
     L.tileLayer.wms(`${EEA}/services/${SERVIZI_AREE.natura2000}/WMSServer`, {
-      pane: 'aree', layers: '0,1', format: 'image/png', transparent: true, version: '1.3.0', opacity: 0.7,
+      pane: 'aree', layers: '0,1', format: 'image/png', transparent: true, version: '1.3.0', opacity: 0.7, opacitaPiena: 0.7,
       attribution: 'Aree protette &copy; <a href="https://www.eea.europa.eu">EEA</a>',
     }),
   ]);
@@ -57,6 +57,11 @@ export function creaSfondi(mappa) {
     const { url, opzioni } = SFONDI[sfondo];
     livelloSfondo = L.tileLayer(url, opzioni).addTo(mappa);
     document.documentElement.dataset.sfondo = sfondo; // per adattare i colori sopra al satellite
+  }
+
+  // Con percorsi e tracce visibili le aree si attenuano, per non confondersi con le linee
+  function attenuaAree(si) {
+    aree.eachLayer((l) => l.setOpacity(si ? 0.3 : l.options.opacitaPiena));
   }
 
   function impostaAree(accese) {
@@ -72,6 +77,7 @@ export function creaSfondi(mappa) {
   return {
     impostaSfondo,
     impostaAree,
+    attenuaAree,
     sfondo: () => sfondo,
     areeAccese: () => areeAccese,
   };
