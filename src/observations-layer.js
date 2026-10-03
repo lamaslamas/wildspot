@@ -11,7 +11,7 @@
 
 import L from './leaflet-global.js';
 import { gruppo } from './groups.js';
-import { creaIndicatore, htmlOsservazione, evidenziaIndicatore } from './markers.js';
+import { creaIndicatore, htmlOsservazione, evidenziaIndicatore, cambiaHtml } from './markers.js';
 
 export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
   // Pannello sotto agli indicatori per le aree di incertezza
@@ -73,11 +73,19 @@ export function creaLivelloOsservazioni(mappa, raggruppamento, onSeleziona) {
     areaEvidenziata = null;
   }
 
+  // Evidenzia le osservazioni con id in `vicini` e attenua le altre; null = normale
+  function evidenziaVicini(vicini) {
+    for (const [id, { indicatore, o }] of perId) {
+      const extra = !vicini ? '' : vicini.has(id) ? 'mk-vicino' : 'mk-lontano';
+      cambiaHtml(indicatore, htmlOsservazione(o.gruppo, o.oscurata, extra));
+    }
+  }
+
   // Seleziona un'osservazione dall'esterno (per esempio dall'elenco)
   function seleziona(id) {
     const voce = perId.get(id);
     if (voce) evidenzia(voce.indicatore, voce.o);
   }
 
-  return { aggiorna, togliEvidenziazione, seleziona };
+  return { aggiorna, togliEvidenziazione, seleziona, evidenziaVicini };
 }

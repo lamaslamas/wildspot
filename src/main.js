@@ -34,6 +34,11 @@ import { creaLivelloHeatmap } from './heatmap-layer.js';
 import { creaSfondi, areeNelPunto } from './basemaps.js';
 import { creaPannelloSfondi, creaSchedaAree } from './basemaps-ui.js';
 import { creaQuandoAndare } from './best-times-ui.js';
+import { cercaPercorsi } from './trails.js';
+import { creaLivelloPercorsi } from './trails-layer.js';
+import { creaPannelloPercorsi, creaSchedaPercorso, creaSchedaTraccia, creaMenuPunto, RAGGI_PERCORSI } from './trails-ui.js';
+import { importaTraccia, leggiTracce, rinominaTraccia, eliminaTraccia } from './tracks.js';
+import { distanzaDaTrattiM } from './geo.js';
 import { dataIso } from './weather.js';
 import { apriSheet, chiudiSheet } from './sheet.js';
 import { t, traduciPagina, alCambioLingua } from './i18n.js';
@@ -116,6 +121,7 @@ const livelloSole = creaLivelloSole(mappa);
 const livelloHeatmap = creaLivelloHeatmap(mappa);
 const sfondi = creaSfondi(mappa);
 const livelloSpot = creaLivelloSpot(mappa, apriSpot);
+const livelloPercorsi = creaLivelloPercorsi(mappa, { onPercorso: (p) => apriPercorso(p), onTraccia: (tr) => apriTraccia(tr) });
 
 // Toccando un punto vuoto della mappa: con il pannello luce o il modulo di uno
 // spot aperti si sposta il punto; altrimenti si chiude il pannello aperto
@@ -128,8 +134,8 @@ mappa.on('click', (e) => {
   else if (sfondi.areeAccese()) mostraAree(punto);
 });
 
-// Tenendo premuto sulla mappa si crea un nuovo spot in quel punto
-mappa.on('contextmenu', (e) => nuovoSpot({ lat: e.latlng.lat, lng: e.latlng.lng }));
+// Tenendo premuto sulla mappa si apre un piccolo menu: percorsi, nuovo spot, luce
+mappa.on('contextmenu', (e) => apriMenuPunto({ lat: e.latlng.lat, lng: e.latlng.lng }));
 
 // Gli spostamenti fatti dal codice (per mostrare il punto sopra al pannello)
 // non devono spostare l'area di ricerca
@@ -496,6 +502,7 @@ function apriDiario(messaggio) {
       try {
         const esito = await importaJson(testo);
         aggiornaSpotSullaMappa();
+        await caricaTracce(); // il backup può contenere tracce GPX
         apriDiario({ testo: `${t('spot.importati', esito)} ${t('foto.importate', esito)}`, tipo: 'ok' });
       } catch {
         apriDiario({ testo: t('spot.importaErrore'), tipo: 'errore' });
@@ -605,6 +612,273 @@ async function mostraAree(punto) {
   }
 }
 
+// --- Menu del tocco prolungato
+let segnoPunto = null;
+function apriMenuPunto(punto) {
+  segnoPunto?.remove();
+  segnoPunto = L.circleMarker([punto.lat, punto.lng], { radius: 7, className: 'segno-punto', interactive: false }).addTo(mappa);
+  const togliSegno = () => {
+    segnoPunto?.remove();
+    segnoPunto = null;
+  };
+  apriPannello(
+    'menuPunto',
+    t('menu.titolo'),
+    creaMenuPunto(punto, {
+      onSpot: () => nuovoSpot(punto),
+      onPercorsi: () => cercaPercorsiIn(punto),
+      onLuce: () => apriLuce(punto),
+    }),
+    togliSegno,
+  );
+}
+
+// --- Percorsi (OpenStreetMap) e tracce GPX
+const statoPercorsi = {
+  raggioKm: RAGGI_PERCORSI.includes(leggi('raggioPercorsi', 3)) ? leggi('raggioPercorsi', 3) : 3,
+  tipi: [],
+  centro: null,
+  raggioUsato: null,
+  percorsi: [],
+  stato: 'vuoto', // vuoto | carico | ok | errore
+  errore: '',
+  tracce: [],
+  tracceVisibili: leggi('tracceVisibili', []),
+  messaggioGpx: null,
+};
+let richiestaPercorsi = null;
+let cerchioPercorsi = null;
+const ATTRIBUZIONE_PERCORSI = 'Percorsi <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a> (ODbL)';
+
+function percorsiVisibili() {
+  return statoPercorsi.percorsi.filter((p) => !statoPercorsi.tipi.length || statoPercorsi.tipi.includes(p.tipo));
+}
+
+function ridisegnaPercorsi() {
+  if (statoPercorsi.percorsi.length) livelloPercorsi.mostraPercorsi(percorsiVisibili());
+  else livelloPercorsi.nascondiPercorsi();
+  livelloPercorsi.mostraTracce(statoPercorsi.tracce.filter((tr) => statoPercorsi.tracceVisibili.includes(tr.id)));
+  mappa.attributionControl.removeAttribution(ATTRIBUZIONE_PERCORSI);
+  if (statoPercorsi.percorsi.length) mappa.attributionControl.addAttribution(ATTRIBUZIONE_PERCORSI);
+}
+
+async function caricaTracce() {
+  try {
+    statoPercorsi.tracce = await leggiTracce();
+  } catch {
+    statoPercorsi.tracce = [];
+  }
+  ridisegnaPercorsi();
+}
+caricaTracce();
+
+function apriPercorsi() {
+  if (vista === 'elenco') impostaVista('mappa');
+  apriPannello(
+    'percorsi',
+    t('percorsi.titolo'),
+    creaPannelloPercorsi(statoPercorsi, {
+      onRaggio: (km) => {
+        statoPercorsi.raggioKm = km;
+        scrivi('raggioPercorsi', km);
+        apriPercorsi();
+      },
+      onTipo: (tipo) => {
+        const tipi = statoPercorsi.tipi;
+        statoPercorsi.tipi = tipi.includes(tipo) ? tipi.filter((x) => x !== tipo) : [...tipi, tipo];
+        if (statoPercorsi.tipi.length === 3) statoPercorsi.tipi = []; // tutti = nessun filtro
+        ridisegnaPercorsi();
+        apriPercorsi();
+      },
+      onCercaQui: () => {
+        const c = mappa.getCenter();
+        cercaPercorsiIn({ lat: c.lat, lng: c.lng });
+      },
+      onApriPercorso: (p) => apriPercorso(p, { inquadra: true }),
+      onNascondi: () => {
+        richiestaPercorsi?.abort();
+        Object.assign(statoPercorsi, { percorsi: [], stato: 'vuoto', centro: null });
+        cerchioPercorsi?.remove();
+        cerchioPercorsi = null;
+        ridisegnaPercorsi();
+        apriPercorsi();
+      },
+      onImportaGpx: async (file) => {
+        let ok = 0;
+        let ultima = null;
+        for (const f of file) {
+          try {
+            ultima = await importaTraccia(f);
+            ok++;
+          } catch {
+            // continua con gli altri file
+          }
+        }
+        if (ultima) statoPercorsi.tracceVisibili = [...new Set([...statoPercorsi.tracceVisibili, ultima.id])];
+        scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
+        statoPercorsi.messaggioGpx =
+          ok === file.length
+            ? { testo: t('gpx.importate', { n: ok }), tipo: 'ok' }
+            : { testo: t('gpx.erroreFile', { n: file.length - ok }), tipo: 'errore' };
+        await caricaTracce();
+        if (ultima) inquadraTratti(ultima.tratti);
+        apriPercorsi();
+      },
+      onApriTraccia: (tr) => apriTraccia(tr, { inquadra: true }),
+      onMostraTraccia: (tr) => {
+        const v = statoPercorsi.tracceVisibili;
+        statoPercorsi.tracceVisibili = v.includes(tr.id) ? v.filter((id) => id !== tr.id) : [...v, tr.id];
+        scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
+        ridisegnaPercorsi();
+        apriPercorsi();
+      },
+    }),
+    () => {
+      statoPercorsi.messaggioGpx = null;
+    },
+  );
+}
+document.getElementById('trails').addEventListener('click', apriPercorsi);
+
+// Cerca i percorsi intorno a un punto (con un'attesa minima tra ricerche ravvicinate)
+let ultimaRicercaPercorsi = 0;
+async function cercaPercorsiIn(punto) {
+  if (Date.now() - ultimaRicercaPercorsi < 1500) return;
+  ultimaRicercaPercorsi = Date.now();
+  richiestaPercorsi?.abort();
+  const controller = new AbortController();
+  richiestaPercorsi = controller;
+  const raggioKm = statoPercorsi.raggioKm;
+  Object.assign(statoPercorsi, { centro: punto, stato: 'carico', errore: '' });
+
+  // cerchio leggero che mostra l'area della ricerca
+  cerchioPercorsi?.remove();
+  cerchioPercorsi = L.circle([punto.lat, punto.lng], { radius: raggioKm * 1000, className: 'raggio-percorsi', interactive: false }).addTo(mappa);
+  apriPercorsi();
+  try {
+    const percorsi = await cercaPercorsi(punto, raggioKm, controller.signal);
+    if (controller.signal.aborted) return;
+    Object.assign(statoPercorsi, { percorsi, stato: 'ok', raggioUsato: raggioKm });
+    ridisegnaPercorsi();
+    // inquadra l'area cercata (il punto del tocco prolungato può essere lontano dal centro)
+    const b = cerchioPercorsi.getBounds();
+    inquadraTratti([[[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]]]);
+  } catch (err) {
+    if (controller.signal.aborted) return;
+    statoPercorsi.stato = 'errore';
+    statoPercorsi.errore = !navigator.onLine
+      ? 'percorsi.offline'
+      : err.status === 429
+        ? 'percorsi.troppe'
+        : err.lento || err.status === 504
+          ? 'percorsi.lento'
+          : 'percorsi.errore';
+  }
+  if (pannelloAperto === 'percorsi') apriPercorsi();
+}
+
+// Inquadra un tracciato nella parte di mappa non coperta dal pannello
+function inquadraTratti(tratti) {
+  const pannello = document.getElementById('sheet');
+  const aperto = pannello.classList.contains('aperto');
+  let alto = [30, 30];
+  let basso = [30, 30];
+  if (aperto && window.innerWidth >= 700) alto = [pannello.offsetLeft + pannello.offsetWidth + 30, 30];
+  else if (aperto) basso = [30, Math.min(pannello.offsetHeight, window.innerHeight * 0.55) + 20];
+  ignoraProssimoSpostamento = true;
+  mappa.fitBounds(L.latLngBounds(tratti.flat()), { paddingTopLeft: alto, paddingBottomRight: basso, maxZoom: 16 });
+}
+
+// Osservazioni caricate entro 500 m da un tracciato (le oscurate non contano)
+const DISTANZA_VICINI_M = 500;
+function avvistamentiVicini(tratti) {
+  const voci = [];
+  const idInat = new Set();
+  const idEbird = new Set();
+  for (const o of ultimiDati.osservazioni) {
+    if (o.oscurata) continue;
+    const d = distanzaDaTrattiM(o, tratti);
+    if (d <= DISTANZA_VICINI_M) {
+      idInat.add(o.id);
+      voci.push({ tipo: 'inat', gruppo: o.gruppo, titolo: o.nomeComune || o.nomeSci, fonte: 'iNaturalist', distanzaM: d, apri: () => apriScheda(o) });
+    }
+  }
+  if (ultimiDati.visibili.avvistamenti) {
+    for (const luogo of ultimiDati.luoghi) {
+      if (!luogo.avvistamenti.length) continue;
+      const d = distanzaDaTrattiM(luogo, tratti);
+      if (d <= DISTANZA_VICINI_M) {
+        idEbird.add(luogo.locId);
+        const specie = new Set(luogo.avvistamenti.map((a) => a.codiceSpecie)).size;
+        voci.push({
+          tipo: 'ebird', specie, notevole: luogo.notevole, titolo: luogo.nome, fonte: 'eBird', distanzaM: d,
+          apri: () => apriSchedaLuogo(luogo, { conAvvistamenti: true }),
+        });
+      }
+    }
+  }
+  voci.sort((a, b) => a.distanzaM - b.distanzaM);
+  return { voci, idInat, idEbird };
+}
+
+function evidenziaVicini(vicini) {
+  livelloInat.evidenziaVicini(vicini ? vicini.idInat : null);
+  livelloEbird.evidenziaVicini(vicini ? vicini.idEbird : null);
+}
+
+function chiudiTracciato() {
+  livelloPercorsi.togliSelezione();
+  evidenziaVicini(null);
+}
+
+function apriPercorso(p, { inquadra = false } = {}) {
+  const vicini = avvistamentiVicini(p.tratti);
+  const scheda = creaSchedaPercorso(p, {
+    vicini,
+    onLuce: () => apriLuce({ lat: p.tratti[0][0][0], lng: p.tratti[0][0][1] }),
+    onInquadra: () => inquadraTratti(p.tratti),
+  });
+  const titolo = p.nome || (p.ref ? `${t('percorsi.sentiero')} ${p.ref}` : t(`percorsi.tipo.${p.tipo}`));
+  apriPannello('percorso', titolo, scheda, chiudiTracciato);
+  livelloPercorsi.seleziona(`p-${p.id}`);
+  evidenziaVicini(vicini);
+  if (inquadra) inquadraTratti(p.tratti);
+}
+
+function apriTraccia(tr, { inquadra = false } = {}) {
+  // una traccia aperta dall'elenco va mostrata anche se era nascosta
+  if (!statoPercorsi.tracceVisibili.includes(tr.id)) {
+    statoPercorsi.tracceVisibili = [...statoPercorsi.tracceVisibili, tr.id];
+    scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
+    ridisegnaPercorsi();
+  }
+  const vicini = avvistamentiVicini(tr.tratti);
+  const scheda = creaSchedaTraccia(tr, {
+    vicini,
+    onInquadra: () => inquadraTratti(tr.tratti),
+    onLuce: () => apriLuce({ lat: tr.tratti[0][0][0], lng: tr.tratti[0][0][1] }),
+    onRinomina: async () => {
+      const nome = window.prompt(t('gpx.nuovoNome'), tr.nome);
+      if (!nome?.trim()) return;
+      await rinominaTraccia(tr.id, nome);
+      await caricaTracce();
+      apriTraccia(statoPercorsi.tracce.find((x) => x.id === tr.id) || tr);
+    },
+    onElimina: async () => {
+      if (!window.confirm(t('gpx.confermaElimina', { nome: tr.nome }))) return;
+      await eliminaTraccia(tr.id);
+      statoPercorsi.tracceVisibili = statoPercorsi.tracceVisibili.filter((id) => id !== tr.id);
+      scrivi('tracceVisibili', statoPercorsi.tracceVisibili);
+      await caricaTracce();
+      apriPercorsi();
+    },
+  });
+  apriPannello('traccia', tr.nome, scheda, chiudiTracciato);
+  livelloPercorsi.seleziona(`t-${tr.id}`);
+  evidenziaVicini(vicini);
+  if (inquadra) inquadraTratti(tr.tratti);
+}
+
 // --- Legenda
 function apriLegenda() {
   apriPannello('legenda', t('legenda'), creaLegenda({ ebirdDisponibile: Boolean(impostazioni.chiaveEbird), onApriInfo: apriInfo }));
@@ -699,6 +973,7 @@ alCambioLingua(() => {
   else if (pannelloAperto === 'legenda') apriLegenda();
   else if (pannelloAperto === 'sfondi') apriSfondi();
   else if (pannelloAperto === 'novita') apriNovita();
+  else if (pannelloAperto === 'percorsi') apriPercorsi();
   else if (pannelloAperto === 'diario') apriDiario();
   else if (pannelloAperto === 'spot' && spotAperto) apriSpot(trovaSpot(spotAperto));
   else if (pannelloAperto === 'moduloSpot') {

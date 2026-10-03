@@ -15,18 +15,25 @@ import { iconaGruppo, ICONA_BINOCOLO } from './icons.js';
 import { gruppo } from './groups.js';
 import { HTML_SPOT } from './spots-layer.js';
 
-export function htmlOsservazione(idGruppo, oscurata = false) {
+// `extra`: classi aggiuntive, es. 'mk-vicino' o 'mk-lontano' rispetto a un percorso
+export function htmlOsservazione(idGruppo, oscurata = false, extra = '') {
   const { colore } = gruppo(idGruppo);
-  return `<span class="mk mk-inat${oscurata ? ' mk-oscurata' : ''}" style="--c:${colore}">${iconaGruppo(idGruppo)}</span>`;
+  return `<span class="mk mk-inat${oscurata ? ' mk-oscurata' : ''} ${extra}" style="--c:${colore}">${iconaGruppo(idGruppo)}</span>`;
 }
 
-export function htmlLuogoEbird(numeroSpecie, notevole = false) {
+export function htmlLuogoEbird(numeroSpecie, notevole = false, extra = '') {
   const testo = numeroSpecie === null ? '' : `<b>${notevole ? '★ ' : ''}${numeroSpecie}</b>`;
-  return `<span class="mk mk-ebird${notevole ? ' mk-notevole' : ''}">${ICONA_BINOCOLO}${testo}</span>`;
+  return `<span class="mk mk-ebird${notevole ? ' mk-notevole' : ''} ${extra}">${ICONA_BINOCOLO}${testo}</span>`;
 }
 
-export function htmlHotspot() {
-  return `<span class="mk mk-hotspot">${ICONA_BINOCOLO}</span>`;
+export function htmlHotspot(extra = '') {
+  return `<span class="mk mk-hotspot ${extra}">${ICONA_BINOCOLO}</span>`;
+}
+
+// Cambia l'aspetto di un indicatore già creato (resta valido anche quando il
+// raggruppamento lo toglie e lo rimette sulla mappa)
+export function cambiaHtml(indicatore, html) {
+  indicatore.setIcon(L.divIcon({ className: 'mk-involucro', html, iconSize: null }));
 }
 
 // Simbolo di un livello della mappa (per i filtri)

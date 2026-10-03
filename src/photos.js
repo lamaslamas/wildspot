@@ -2,33 +2,12 @@
 // piccolo per le immagini). Ogni foto viene ridimensionata a 1600 px e
 // compressa in JPEG prima di salvarla, per non riempire la memoria.
 
-const DB = 'wildspot';
+import { transazione as tx } from './db.js';
+
 const STORE = 'foto';
 const LATO_MAX = 1600;
 
-let dbPromessa = null;
-function apriDb() {
-  dbPromessa ??= new Promise((resolve, reject) => {
-    const richiesta = indexedDB.open(DB, 1);
-    richiesta.onupgradeneeded = () => {
-      const store = richiesta.result.createObjectStore(STORE, { keyPath: 'id' });
-      store.createIndex('spotId', 'spotId');
-    };
-    richiesta.onsuccess = () => resolve(richiesta.result);
-    richiesta.onerror = () => reject(richiesta.error);
-  });
-  return dbPromessa;
-}
-
-async function transazione(modo, operazione) {
-  const db = await apriDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, modo);
-    const risultato = operazione(tx.objectStore(STORE));
-    tx.oncomplete = () => resolve(risultato?.result ?? risultato);
-    tx.onerror = () => reject(tx.error);
-  });
-}
+const transazione = (modo, operazione) => tx(STORE, modo, operazione);
 
 // Ridimensiona e comprime un'immagine (File o Blob) in JPEG
 async function comprimi(file) {

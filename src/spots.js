@@ -12,6 +12,7 @@
 import { leggi, scrivi } from './storage.js';
 import { esportaFoto, importaFoto, eliminaFotoDiSpot } from './photos.js';
 import { leggiSpecieFotografate, importaSpecieFotografate } from './photographed.js';
+import { esportaTracce, importaTracce } from './tracks.js';
 
 const CHIAVE = 'spot';
 export const CAMPI_NOTE = ['capanno', 'accesso', 'luce', 'specie'];
@@ -89,15 +90,16 @@ function normalizza(s) {
 
 // --- Esportazione e importazione
 
-// Il backup contiene spot, foto degli spot e specie fotografate
+// Il backup contiene spot, foto degli spot, specie fotografate e tracce GPX
 export async function esportaJson() {
   const dati = {
     app: 'WildSpot',
-    versione: 2,
+    versione: 3,
     esportato: new Date().toISOString(),
     spot: leggiSpot(),
     specieFotografate: leggiSpecieFotografate(),
     foto: await esportaFoto().catch(() => []),
+    tracce: await esportaTracce().catch(() => []),
   };
   return JSON.stringify(dati);
 }
@@ -121,7 +123,7 @@ export async function importaJson(testo) {
 
   const lista = leggiSpot();
   const perId = new Map(lista.map((s) => [s.id, s]));
-  const esito = { nuovi: 0, aggiornati: 0, invariati: 0, foto: 0, specie: 0 };
+  const esito = { nuovi: 0, aggiornati: 0, invariati: 0, foto: 0, specie: 0, tracce: 0 };
 
   for (const grezzo of ingresso) {
     const spot = normalizza(grezzo);
@@ -140,5 +142,6 @@ export async function importaJson(testo) {
   salvaTutti([...perId.values()]);
   esito.specie = importaSpecieFotografate(dati?.specieFotografate);
   esito.foto = await importaFoto(dati?.foto, new Set(perId.keys())).catch(() => 0);
+  esito.tracce = await importaTracce(dati?.tracce).catch(() => 0);
   return esito;
 }

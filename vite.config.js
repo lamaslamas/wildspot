@@ -70,6 +70,17 @@ export default defineConfig({
             },
           },
           {
+            // Percorsi da Overpass: risposta lenta, quindi attesa lunga prima di usare la copia salvata
+            urlPattern: /^https:\/\/(overpass-api\.de|maps\.mail\.ru\/osm\/tools\/overpass)\/api\/interpreter/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'percorsi',
+              networkTimeoutSeconds: 30,
+              expiration: { maxEntries: 40, maxAgeSeconds: 30 * GIORNO },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             // Foto delle osservazioni
             urlPattern: /^https:\/\/(inaturalist-open-data\.s3\.amazonaws\.com|static\.inaturalist\.org)\//,
             handler: 'CacheFirst',

@@ -52,6 +52,7 @@ export function creaLegenda({ ebirdDisponibile, onApriInfo }) {
       'ul',
       { class: 'legenda' },
       voce(conHtml('', HTML_SPOT), t('legenda.spot'), t('legenda.spotSpiega')),
+      voce(conHtml('', '<span class="legenda-linee"><i style="--c:#d9480f"></i><i style="--c:#7b2cbf"></i><i class="tratt" style="--c:#1c7ed6"></i><i style="--c:#212529"></i></span>'), t('legenda.percorsi'), t('legenda.percorsiSpiega')),
       voce(conHtml('', '<span class="legenda-heat"></span>'), t('legenda.heatmap'), t('legenda.heatmapSpiega')),
       voce(conHtml('', '<span class="simbolo-aree grande"></span>'), t('legenda.aree'), t('legenda.areeSpiega')),
       voce(conHtml('', '<span class="mk-gruppo"><span>24</span></span>'), t('legenda.gruppo'), t('legenda.gruppoSpiega')),

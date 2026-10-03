@@ -101,7 +101,7 @@ export function creaDiario({ spot, riferimento, messaggio, scheda = 'spot', onSc
     el(
       'div',
       { class: 'riga-azioni' },
-      el('button', { type: 'button', class: 'btn', disabled: !spot.length && !specie.length, onclick: onEsporta }, t('spot.esporta')),
+      el('button', { type: 'button', class: 'btn', onclick: onEsporta }, t('spot.esporta')), // anche con sole tracce GPX
       el('button', { type: 'button', class: 'btn', onclick: () => campoFile.click() }, t('spot.importa')),
     ),
     campoFile,

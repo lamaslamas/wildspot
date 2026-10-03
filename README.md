@@ -2,7 +2,7 @@
 
 Web app per fotografi naturalisti: mostra intorno alla tua posizione i posti migliori per fotografare animali selvatici, con avvistamenti recenti (eBird, iNaturalist), luce, ora dorata e meteo. Pensata per il telefono e installabile su Android come PWA. Disponibile in italiano e in inglese.
 
-> Stato: **tutte le fasi della SPEC completate**, più: vista elenco, heatmap, sfondi topografico e satellitare, aree protette, luna, "Quando vederla" per specie, "Quando andare", foto negli spot, specie fotografate, condivisione degli spot, specie seguite con avvisi.
+> Stato: **tutte le fasi della SPEC completate, compresa la fase 7 (percorsi OpenStreetMap e tracce GPX)**, più: vista elenco, heatmap, sfondi topografico e satellitare, aree protette, luna, "Quando vederla" per specie, "Quando andare", foto negli spot, specie fotografate, condivisione degli spot, specie seguite con avvisi.
 
 ## Avvio in locale
 
@@ -67,6 +67,13 @@ src/spots-layer.js         segnaposto degli spot sulla mappa
 src/photos.js              foto degli spot (IndexedDB, ridimensionate a 1600 px)
 src/photographed.js        specie fotografate
 src/share.js               condivisione di uno spot
+src/trails.js              percorsi escursionistici, MTB e bici da Overpass API
+src/trails-layer.js        percorsi e tracce GPX sulla mappa
+src/trails-ui.js           pannello Percorsi, schede, segnavia e profilo altimetrico
+src/gpx.js                 lettura dei file GPX e statistiche (lunghezza, dislivello)
+src/tracks.js              tracce GPX salvate (IndexedDB)
+src/geo.js                 calcoli su linee (lunghezza, distanza punto-tracciato)
+src/db.js                  database IndexedDB (foto e tracce)
 src/follow.js              specie seguite e controllo delle nuove segnalazioni
 src/alerts-ui.js           pannello Novità (campanella)
 src/pwa.js                 service worker e installazione
@@ -115,6 +122,8 @@ All'avvio l'app usa la lingua del telefono (italiano se è italiano, altrimenti 
 - **Quando andare**: per uno spot o un punto, le ore dorate dei prossimi 7 giorni (Open-Meteo) con un giudizio da pioggia, nuvole (anche basse), vento e visibilità, più la direzione del sole.
 - **Foto e specie fotografate**: le foto degli spot stanno in IndexedDB, le specie fotografate ("L'ho fotografata" nelle schede) in `localStorage`. Il backup JSON (versione 2) contiene spot, foto (come data URL) e specie fotografate.
 - **Specie seguite e avvisi**: "Segui" nelle schede. Con l'app aperta (all'avvio, ogni 30 minuti e al ritorno sull'app) si cercano nuove osservazioni iNaturalist caricate dopo l'ultimo controllo e avvistamenti eBird recenti entro la distanza scelta nelle Impostazioni. Le novità compaiono sotto la campanella; con il permesso arriva anche una notifica. Senza un server non è possibile avvisare ad app chiusa.
+- **Percorsi (fase 7)**: pulsante **Percorsi** sulla mappa o tocco prolungato → "Percorsi qui". Query Overpass in GET (cacheabile dal service worker) con geometria ritagliata al raggio + 2 km; server principale `overpass-api.de`, riserva `maps.mail.ru`, timeout 25 s. Lunghezza dal tag `distance` o calcolata (con "almeno" se il percorso è ritagliato), difficoltà `cai_scale`/`sac_scale`/`mtb:scale`, segnavia disegnato da `osmc:symbol`. Avvistamenti entro 500 m dal tracciato evidenziati sulla mappa (escluse le posizioni oscurate). Dati © OpenStreetMap, ODbL.
+- **Tracce GPX**: "Importa GPX" nel pannello Percorsi; lettura con `DOMParser` di `trk`/`rte`, lunghezza, dislivello (con soglia di 3 m contro il rumore del GPS), quote e profilo. Salvate in IndexedDB e incluse nel backup del diario (versione 3).
 - **Posizioni oscurate**: alcune osservazioni (specie sensibili o scelta dell'autore) hanno coordinate pubbliche volutamente imprecise. L'app le mostra con un badge chiaro dal bordo tratteggiato; toccandole compare l'area di incertezza. L'app non tenta mai di ricostruire il punto reale.
 
 ## Attribuzioni

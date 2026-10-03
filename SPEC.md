@@ -68,6 +68,27 @@ Interfaccia in italiano, pensata prima di tutto per il telefono.
 4. **Luce e meteo**: pannello SunCalc, freccia del sole, cursore orario, Open-Meteo
 5. **Diario**: spot personali, note, esportazione e importazione
 6. **PWA e rifinitura**: installazione su Android, icone, comportamento offline, revisione grafica
+7. **Percorsi e tracce GPX**: percorsi escursionistici, MTB e bici da OpenStreetMap; import di tracce GPX (dettagli sotto)
+
+## Fase 7: percorsi escursionistici e MTB
+
+### Percorsi da OpenStreetMap (Overpass API)
+- Ricerca dal pulsante **"Percorsi"** sulla mappa (centro della mappa) o dal **menu del tocco prolungato** ("Percorsi qui"; lo stesso menu offre "Nuovo spot qui" e "Luce e meteo qui"). Raggio selezionabile: 1, 3, 5, 10 km
+- Query Overpass (`https://overpass-api.de/api/interpreter`, con `maps.mail.ru` come server di riserva) in GET, così il service worker può salvarla per l'uso offline:
+  `[out:json][timeout:25];relation["route"~"hiking|foot|mtb|bicycle"](around:RAGGIO,LAT,LON);out geom(BBOX);`
+  La geometria è ritagliata a un riquadro poco più grande del raggio per non scaricare interi percorsi regionali (senza ritaglio: circa 2 MB per 5 km)
+- Colore per tipo: trekking/a piedi rosso-arancio, MTB viola, bici blu
+- Scheda del percorso: nome o numero, tipo, lunghezza (tag `distance` se presente, altrimenti calcolata dalla geometria; se il percorso è ritagliato si indica "almeno"), partenza e arrivo, difficoltà (`cai_scale`, `sac_scale`, `mtb:scale`), segnavia disegnato da `osmc:symbol`, link alla relazione su openstreetmap.org
+- Filtro per tipo (trekking, MTB, bici): nessuna selezione = tutti
+- Avvistamenti vicini: le osservazioni iNaturalist ed eBird caricate entro 500 m dal tracciato vengono evidenziate sulla mappa ed elencate nella scheda. Le osservazioni con posizione oscurata non vengono mai considerate "sul percorso"
+- Cache dei risultati, attesa tra ricerche ravvicinate, messaggi chiari se Overpass è lento, sovraccarico o non risponde
+- Attribuzione OpenStreetMap (licenza ODbL)
+
+### Import GPX
+- Pulsante "Importa GPX" per tracce di altre app (Wikiloc, Komoot…): parsing con `DOMParser` di `trk` e `rte`
+- Traccia disegnata sulla mappa con lunghezza, dislivello positivo e negativo, quota minima e massima e profilo altimetrico, se il file ha le quote
+- Salvataggio in IndexedDB, con elenco, rinomina, eliminazione e "mostra sulla mappa"; anche per le tracce si possono vedere gli avvistamenti entro 500 m
+- Le tracce restano solo sul dispositivo e sono incluse nel backup del diario
 
 ## Idee per dopo (non ora)
 
